@@ -16,7 +16,7 @@ export default function TeacherLayout({ pageTitle, actions, children }) {
       <div className="flex min-h-screen">
         <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white/90 backdrop-blur md:flex">
           <div className="px-6 py-6">
-            <img src={logo} alt="MusiCal" className="h-10 w-auto" />
+            <img src={logo} alt="MusiCal" className="h-16 w-auto" />
           </div>
           <nav className="flex-1 space-y-1 px-4">
             {navItems.map((item) => (
