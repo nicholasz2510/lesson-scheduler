@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { mockScheduleDetails } from "../data/mockData";
 import useDocumentTitle from "../utils/useDocumentTitle";
+import { brandColor, brandSurface, brandSurfaceLight } from "../utils/theme";
 
 export default function StudentSelect() {
   const { scheduleId } = useParams();
@@ -16,11 +17,20 @@ export default function StudentSelect() {
   useDocumentTitle(`${schedule.title} – Choose your name`);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-4 py-16">
+    <div
+      className="min-h-screen px-4 py-16"
+      style={{
+        background: `linear-gradient(135deg, ${brandSurface} 0%, ${brandSurfaceLight} 60%, #f8fafc 100%)`,
+      }}
+    >
       <Card className="mx-auto w-full max-w-3xl shadow-xl">
         <CardBody className="space-y-8 p-10">
           <div className="space-y-2 text-center">
-            <Typography variant="small" className="uppercase tracking-wide text-emerald-500">
+            <Typography
+              variant="small"
+              className="uppercase tracking-wide"
+              style={{ color: brandColor }}
+            >
               {schedule.title}
             </Typography>
             <Typography variant="h4" className="font-display text-slate-800">
@@ -36,7 +46,7 @@ export default function StudentSelect() {
                 key={student.id}
                 type="button"
                 onClick={() => navigate(`/s/${schedule.id}/${student.id}`)}
-                className="rounded-2xl border border-slate-100 bg-white px-6 py-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
+                className="rounded-2xl border border-slate-100 bg-white px-6 py-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#cfc0ec] hover:shadow-lg"
               >
                 <Typography variant="h6" className="font-display text-slate-800">
                   {student.name}

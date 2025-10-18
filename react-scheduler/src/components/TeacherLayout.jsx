@@ -26,7 +26,7 @@ export default function TeacherLayout({ pageTitle, actions, children }) {
                 className={({ isActive }) =>
                   `block rounded-lg px-4 py-3 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-100 text-emerald-700"
+                      ? "bg-[#ede8f7] text-[#62439d]"
                       : "text-slate-600 hover:bg-slate-100"
                   }`
                 }

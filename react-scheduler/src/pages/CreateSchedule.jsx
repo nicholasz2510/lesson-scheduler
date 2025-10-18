@@ -14,6 +14,16 @@ import TeacherLayout from "../components/TeacherLayout";
 import { formatScheduleDates, upcomingDateOptions } from "../data/mockData";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
 import useDocumentTitle from "../utils/useDocumentTitle";
+import {
+  brandColor,
+  brandColorDeep,
+  brandSurface,
+  brandSurfaceLight,
+  primaryButtonFilledClasses,
+  primaryButtonOutlinedClasses,
+  primaryButtonTextClasses,
+  primaryInputFocusClasses,
+} from "../utils/theme";
 
 const steps = [
   {
@@ -121,10 +131,11 @@ export default function CreateSchedule() {
             </Typography>
             <Input
               size="lg"
-              color="green"
+              color="purple"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="e.g. Fall Jury Week"
+              className={primaryInputFocusClasses}
               crossOrigin=""
             />
           </div>
@@ -142,8 +153,13 @@ export default function CreateSchedule() {
                   <Button
                     key={date}
                     size="sm"
-                    color={isActive ? "green" : "gray"}
+                    color={isActive ? "purple" : "gray"}
                     variant={isActive ? "filled" : "outlined"}
+                    className={
+                      isActive
+                        ? primaryButtonFilledClasses
+                        : primaryButtonOutlinedClasses
+                    }
                     onClick={() => handleToggleDate(date)}
                   >
                     {formatScheduleDates([date])}
@@ -169,23 +185,29 @@ export default function CreateSchedule() {
                     <Input
                       label="Student name"
                       value={student.name}
-                      color="green"
+                      color="purple"
                       onChange={(event) =>
                         handleStudentChange(student.id, { name: event.target.value })
                       }
+                      className={primaryInputFocusClasses}
                       crossOrigin=""
                     />
                     <div className="flex items-center gap-3">
                       <Typography variant="small" className="text-slate-500">
                         Lesson length
                       </Typography>
-                      <ButtonGroup variant="outlined" color="green" size="sm">
+                      <ButtonGroup variant="outlined" color="purple" size="sm">
                         {[30, 60].map((length) => (
                           <Button
                             key={length}
-                            color={student.lessonLength === length ? "green" : "gray"}
+                            color={student.lessonLength === length ? "purple" : "gray"}
                             variant={
                               student.lessonLength === length ? "filled" : "text"
+                            }
+                            className={
+                              student.lessonLength === length
+                                ? primaryButtonFilledClasses
+                                : primaryButtonOutlinedClasses
                             }
                             onClick={() =>
                               handleStudentChange(student.id, { lessonLength: length })
@@ -211,14 +233,23 @@ export default function CreateSchedule() {
       case 3:
         return (
           <div className="space-y-6">
-            <div className="rounded-2xl bg-emerald-50 p-6">
-              <Typography variant="small" className="text-emerald-600">
+            <div
+              className="rounded-2xl p-6"
+              style={{
+                background: `linear-gradient(135deg, ${brandSurface} 0%, ${brandSurfaceLight} 100%)`,
+              }}
+            >
+              <Typography variant="small" style={{ color: brandColor }}>
                 Share link preview
               </Typography>
-              <Typography variant="h6" className="font-display text-emerald-900">
+              <Typography
+                variant="h6"
+                className="font-display"
+                style={{ color: brandColorDeep }}
+              >
                 {`${getAppOrigin()}/s/${shareSlug}`}
               </Typography>
-              <Typography variant="small" className="mt-2 text-emerald-700">
+              <Typography variant="small" className="mt-2" style={{ color: brandColor }}>
                 Copy and send this link to students so they can submit availability.
               </Typography>
             </div>
@@ -261,10 +292,11 @@ export default function CreateSchedule() {
 
   const actions = (
     <Button
-      color="green"
+      color="purple"
       size="sm"
       onClick={() => navigate("/teacher/dashboard")}
       variant="text"
+      className={primaryButtonTextClasses}
     >
       Exit setup
     </Button>
@@ -289,19 +321,28 @@ export default function CreateSchedule() {
                 Back
               </Button>
               {step < steps.length - 1 ? (
-                <Button color="green" onClick={goNext}>
+                <Button
+                  color="purple"
+                  className={primaryButtonFilledClasses}
+                  onClick={goNext}
+                >
                   Continue
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
                   <Button
-                    color="green"
+                    color="purple"
                     variant="outlined"
+                    className={primaryButtonOutlinedClasses}
                     onClick={() => copyToClipboard(`${getAppOrigin()}/s/${shareSlug}`)}
                   >
                     Copy link
                   </Button>
-                  <Button color="green" onClick={handleFinish}>
+                  <Button
+                    color="purple"
+                    className={primaryButtonFilledClasses}
+                    onClick={handleFinish}
+                  >
                     View schedule
                   </Button>
                 </div>
