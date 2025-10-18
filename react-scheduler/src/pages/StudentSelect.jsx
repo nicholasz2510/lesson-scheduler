@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { mockScheduleDetails } from "../data/mockData";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 export default function StudentSelect() {
   const { scheduleId } = useParams();
@@ -11,6 +12,8 @@ export default function StudentSelect() {
     () => mockScheduleDetails[scheduleId] ?? mockScheduleDetails["spring-recital-week"],
     [scheduleId]
   );
+
+  useDocumentTitle(`${schedule.title} – Choose your name`);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-100 px-4 py-16">

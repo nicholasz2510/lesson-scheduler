@@ -4,10 +4,13 @@ import { Button, Typography } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
 import ScheduleCard from "../components/ScheduleCard";
 import { mockSchedules } from "../data/mockData";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState(mockSchedules);
+
+  useDocumentTitle("Professor dashboard");
 
   const handleOpenSchedule = (schedule) => {
     navigate(`/teacher/schedules/${schedule.id}`);

@@ -1,27 +1,27 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Button,
-  Card,
-  CardBody,
-  Checkbox,
-  Input,
-  Typography,
-} from "@material-tailwind/react";
+import { Button, Card, CardBody, Input, Typography } from "@material-tailwind/react";
 import useDocumentTitle from "../utils/useDocumentTitle";
 
-export default function TeacherSignIn() {
+export default function TeacherSignUp() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("emartinez@music.edu");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
 
-  useDocumentTitle("Professor sign in");
+  useDocumentTitle("Create professor account");
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    // TODO: replace with server authentication request once backend is ready.
-    navigate("/teacher/dashboard");
+    // TODO: replace with server request when backend is available.
+    navigate("/teacher/dashboard", {
+      state: {
+        account: {
+          name,
+          email,
+        },
+      },
+    });
   };
 
   return (
@@ -31,22 +31,37 @@ export default function TeacherSignIn() {
         <CardBody className="space-y-6 p-8">
           <div className="space-y-2 text-center">
             <Typography variant="h4" className="font-display text-slate-800">
-              Professor sign in
+              Create your professor account
             </Typography>
             <Typography variant="small" className="text-slate-500">
-              Access your MusiCal schedules and manage availability.
+              Join MusiCal to build schedules and gather availability from your studio.
             </Typography>
           </div>
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Typography variant="small" className="text-left text-slate-600">
-                Email
+                Name
               </Typography>
               <Input
                 size="lg"
                 color="green"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+                crossOrigin=""
+              />
+            </div>
+            <div className="space-y-2">
+              <Typography variant="small" className="text-left text-slate-600">
+                Email
+              </Typography>
+              <Input
+                type="email"
+                size="lg"
+                color="green"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                required
                 crossOrigin=""
               />
             </div>
@@ -60,30 +75,18 @@ export default function TeacherSignIn() {
                 color="green"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                required
                 crossOrigin=""
               />
-            </div>
-            <div className="flex items-center justify-between">
-              <Checkbox
-                color="green"
-                checked={remember}
-                onChange={() => setRemember((value) => !value)}
-                label="Remember me"
-                ripple={false}
-                crossOrigin=""
-              />
-              <Typography as="button" type="button" variant="small" className="text-emerald-600">
-                Forgot password?
-              </Typography>
             </div>
             <Button type="submit" color="green" size="lg" className="w-full">
-              Sign in
+              Create account
             </Button>
           </form>
           <Typography variant="small" className="text-center text-slate-500">
-            Need an account?{" "}
-            <Link to="/teacher/create-account" className="font-medium text-emerald-600">
-              Create one
+            Already have an account?{" "}
+            <Link to="/" className="font-medium text-emerald-600">
+              Sign in
             </Link>
             .
           </Typography>

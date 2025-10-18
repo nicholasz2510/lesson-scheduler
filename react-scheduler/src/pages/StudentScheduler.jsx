@@ -7,6 +7,7 @@ import {
   formatScheduleDates,
   mockScheduleDetails,
 } from "../data/mockData";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 export default function StudentScheduler() {
   const { scheduleId, studentId } = useParams();
@@ -25,6 +26,8 @@ export default function StudentScheduler() {
     createBlankAvailability(schedule.dates)
   );
   const [submitted, setSubmitted] = useState(false);
+
+  useDocumentTitle(`${student.name} availability – ${schedule.title}`);
 
   const handleToggle = (date, slot) => {
     setAvailability((previous) => ({

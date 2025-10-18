@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import TeacherSignIn from "./pages/TeacherSignIn";
+import TeacherSignUp from "./pages/TeacherSignUp";
 import CreateSchedule from "./pages/CreateSchedule";
 import ScheduleDetail from "./pages/ScheduleDetail";
 import StudentSelect from "./pages/StudentSelect";
@@ -10,6 +11,7 @@ function App() {
   return (
     <Routes>
       <Route index element={<TeacherSignIn />} />
+      <Route path="/teacher/create-account" element={<TeacherSignUp />} />
       <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
       <Route path="/teacher/schedules/new" element={<CreateSchedule />} />
       <Route path="/teacher/schedules/:scheduleId" element={<ScheduleDetail />} />

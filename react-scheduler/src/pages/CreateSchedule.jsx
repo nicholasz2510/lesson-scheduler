@@ -13,6 +13,7 @@ import {
 import TeacherLayout from "../components/TeacherLayout";
 import { formatScheduleDates, upcomingDateOptions } from "../data/mockData";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 const steps = [
   {
@@ -54,6 +55,8 @@ export default function CreateSchedule() {
   const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
   const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? [upcomingDateOptions[1], upcomingDateOptions[2]]);
   const [students, setStudents] = useState(location.state?.students ?? defaultStudents);
+
+  useDocumentTitle("Create schedule");
 
   const shareSlug = useMemo(() => slugify(title), [title]);
 

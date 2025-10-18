@@ -18,6 +18,7 @@ import {
   timeSlots,
 } from "../data/mockData";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 const cloneAvailability = (source, dates) => {
   if (!source) {
@@ -76,6 +77,8 @@ export default function ScheduleDetail() {
       })),
     };
   }, [location.state, scheduleId]);
+
+  useDocumentTitle(`${scheduleData.title} – Professor view`);
 
   const [availability, setAvailability] = useState(() =>
     cloneAvailability(scheduleData.availability, scheduleData.dates)
@@ -165,7 +168,7 @@ export default function ScheduleDetail() {
             {formatScheduleDates(scheduleData.dates)}
           </Typography>
         </div>
-        <Chip value="Teacher view" color="green" variant="filled" className="bg-emerald-500/10 text-emerald-700" />
+        <Chip value="Professor view" color="green" variant="filled" className="bg-emerald-500/10 text-emerald-700" />
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
