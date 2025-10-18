@@ -7,6 +7,11 @@ import {
   formatScheduleDates,
   mockScheduleDetails,
 } from "../data/mockData";
+import useDocumentTitle from "../utils/useDocumentTitle";
+import {
+  brandColor,
+  primaryButtonFilledClasses,
+} from "../utils/theme";
 
 export default function StudentScheduler() {
   const { scheduleId, studentId } = useParams();
@@ -25,6 +30,8 @@ export default function StudentScheduler() {
     createBlankAvailability(schedule.dates)
   );
   const [submitted, setSubmitted] = useState(false);
+
+  useDocumentTitle(`${student.name} availability – ${schedule.title}`);
 
   const handleToggle = (date, slot) => {
     setAvailability((previous) => ({
@@ -47,7 +54,11 @@ export default function StudentScheduler() {
       <Card className="mx-auto w-full max-w-5xl shadow-lg">
         <CardBody className="space-y-8 p-8 md:p-12">
           <div className="space-y-2 text-center">
-            <Typography variant="small" className="uppercase tracking-wide text-emerald-500">
+            <Typography
+              variant="small"
+              className="uppercase tracking-wide"
+              style={{ color: brandColor }}
+            >
               {schedule.title}
             </Typography>
             <Typography variant="h4" className="font-display text-slate-800">
@@ -65,11 +76,17 @@ export default function StudentScheduler() {
             subtitle="Tap each block to mark when you could meet."
           />
           <div className="flex flex-col items-center gap-4">
-            <Button color="green" size="lg" onClick={handleSubmit} disabled={submitted}>
+            <Button
+              color="purple"
+              size="lg"
+              className={primaryButtonFilledClasses}
+              onClick={handleSubmit}
+              disabled={submitted}
+            >
               {submitted ? "Availability submitted" : "Submit"}
             </Button>
             {submitted ? (
-              <Typography variant="small" className="text-emerald-600">
+              <Typography variant="small" style={{ color: brandColor }}>
                 Thanks! Your availability has been shared with your teacher.
               </Typography>
             ) : (

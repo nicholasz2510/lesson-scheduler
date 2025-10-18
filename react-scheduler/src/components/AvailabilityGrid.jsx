@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { Card, CardBody, Tooltip, Typography } from "@material-tailwind/react";
 import { format } from "date-fns";
 import { formatSlotLabel, timeSlots } from "../data/mockData";
+import { primaryButtonFilledClasses } from "../utils/theme";
 
 const formatDateHeader = (dateString) =>
   format(new Date(dateString), "EEE, MMM d");
@@ -74,7 +75,7 @@ export default function AvailabilityGrid({
                           }
                           className={`border-t border-l border-slate-100 px-2 py-4 text-sm transition ${
                             isActive
-                              ? "bg-emerald-500/90 text-white hover:bg-emerald-600"
+                              ? `${primaryButtonFilledClasses} text-white`
                               : "bg-slate-50 text-slate-400 hover:bg-slate-100"
                           } ${readonly ? "cursor-default" : "cursor-pointer"}`}
                         >

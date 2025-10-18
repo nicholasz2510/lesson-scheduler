@@ -18,6 +18,14 @@ import {
   timeSlots,
 } from "../data/mockData";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
+import useDocumentTitle from "../utils/useDocumentTitle";
+import {
+  brandColor,
+  primaryButtonFilledClasses,
+  primaryButtonOutlinedClasses,
+  primaryCheckboxClasses,
+  primaryChipClasses,
+} from "../utils/theme";
 
 const cloneAvailability = (source, dates) => {
   if (!source) {
@@ -76,6 +84,8 @@ export default function ScheduleDetail() {
       })),
     };
   }, [location.state, scheduleId]);
+
+  useDocumentTitle(`${scheduleData.title} – Professor view`);
 
   const [availability, setAvailability] = useState(() =>
     cloneAvailability(scheduleData.availability, scheduleData.dates)
@@ -143,12 +153,17 @@ export default function ScheduleDetail() {
     <>
       <Button
         variant="outlined"
-        color="green"
+        color="purple"
+        className={primaryButtonOutlinedClasses}
         onClick={() => copyToClipboard(shareLink)}
       >
         Share link
       </Button>
-      <Button color="green" onClick={handleRunScheduling}>
+      <Button
+        color="purple"
+        className={primaryButtonFilledClasses}
+        onClick={handleRunScheduling}
+      >
         Schedule!
       </Button>
     </>
@@ -165,7 +180,12 @@ export default function ScheduleDetail() {
             {formatScheduleDates(scheduleData.dates)}
           </Typography>
         </div>
-        <Chip value="Teacher view" color="green" variant="filled" className="bg-emerald-500/10 text-emerald-700" />
+        <Chip
+          value="Professor view"
+          color="purple"
+          variant="filled"
+          className={primaryChipClasses}
+        />
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
@@ -207,7 +227,11 @@ export default function ScheduleDetail() {
                           {format(new Date(result.date), "EEEE, MMMM d")}
                         </Typography>
                       </div>
-                      <Typography variant="h6" className="font-display text-emerald-700">
+                      <Typography
+                        variant="h6"
+                        className="font-display"
+                        style={{ color: brandColor }}
+                      >
                         {formatResultLabel(result)}
                       </Typography>
                     </div>
@@ -240,7 +264,8 @@ export default function ScheduleDetail() {
                     </Typography>
                   </div>
                   <Checkbox
-                    color="green"
+                    color="purple"
+                    className={primaryCheckboxClasses}
                     checked={student.submitted}
                     onChange={() => handleToggleSubmitted(student.id)}
                     label="Submitted?"

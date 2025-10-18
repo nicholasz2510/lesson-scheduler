@@ -11,6 +11,12 @@ import {
 } from "@material-tailwind/react";
 import { DotsVerticalIcon } from "./icons";
 import { formatScheduleDates } from "../data/mockData";
+import {
+  brandColor,
+  brandColorDeep,
+  brandSurface,
+  brandSurfaceLight,
+} from "../utils/theme";
 
 export default function ScheduleCard({ schedule, onOpen, onDelete }) {
   return (
@@ -49,17 +55,24 @@ export default function ScheduleCard({ schedule, onOpen, onDelete }) {
             </MenuList>
           </Menu>
         </div>
-        <div className="rounded-xl bg-gradient-to-r from-emerald-100 to-emerald-50 p-4">
-          <Typography variant="small" className="text-emerald-600">
+        <div
+          className="rounded-xl p-4"
+          style={{
+            background: `linear-gradient(90deg, ${brandSurface} 0%, ${brandSurfaceLight} 100%)`,
+          }}
+        >
+          <Typography variant="small" style={{ color: brandColor }}>
             Availability preview
           </Typography>
-          <Typography variant="paragraph" className="font-medium text-emerald-900">
+          <Typography variant="paragraph" className="font-medium" style={{ color: brandColorDeep }}>
             {schedule.availabilityPreview}
           </Typography>
         </div>
         <div className="mt-auto flex items-center justify-between text-sm text-slate-500">
           <span>{schedule.students} students</span>
-          <span className="font-medium text-emerald-600">Open schedule</span>
+          <span className="font-medium" style={{ color: brandColor }}>
+            Open schedule
+          </span>
         </div>
       </CardBody>
     </Card>

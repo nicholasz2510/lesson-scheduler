@@ -4,10 +4,14 @@ import { Button, Typography } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
 import ScheduleCard from "../components/ScheduleCard";
 import { mockSchedules } from "../data/mockData";
+import useDocumentTitle from "../utils/useDocumentTitle";
+import { brandBorder, primaryButtonFilledClasses } from "../utils/theme";
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const [schedules, setSchedules] = useState(mockSchedules);
+
+  useDocumentTitle("Professor dashboard");
 
   const handleOpenSchedule = (schedule) => {
     navigate(`/teacher/schedules/${schedule.id}`);
@@ -24,7 +28,14 @@ export default function TeacherDashboard() {
   );
 
   const actions = (
-    <Button color="green" size="sm" onClick={() => navigate("/teacher/schedules/new")}>Create schedule</Button>
+    <Button
+      color="purple"
+      size="sm"
+      className={primaryButtonFilledClasses}
+      onClick={() => navigate("/teacher/schedules/new")}
+    >
+      Create schedule
+    </Button>
   );
 
   return (
@@ -58,14 +69,21 @@ export default function TeacherDashboard() {
         ))}
       </div>
       {schedules.length === 0 ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-emerald-200 bg-white/60 p-10 text-center">
+        <div
+          className="mt-10 rounded-2xl border border-dashed bg-white/60 p-10 text-center"
+          style={{ borderColor: brandBorder }}
+        >
           <Typography variant="h6" className="font-display text-slate-700">
             You haven’t created any schedules yet
           </Typography>
           <Typography variant="small" className="mt-2 text-slate-500">
             Create your first schedule to start gathering availability from students.
           </Typography>
-          <Button color="green" className="mt-6" onClick={() => navigate("/teacher/schedules/new")}>
+          <Button
+            color="purple"
+            className={`mt-6 ${primaryButtonFilledClasses}`}
+            onClick={() => navigate("/teacher/schedules/new")}
+          >
             Create schedule
           </Button>
         </div>
