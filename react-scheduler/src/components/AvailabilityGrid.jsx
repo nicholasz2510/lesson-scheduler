@@ -181,7 +181,7 @@ export default function AvailabilityGrid({
               </Typography>
             ) : null}
           </div>
-          <div className="px-6 pb-6">
+          <div className="px-6 pb-6 pt-6">
             <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-500 mb-4">
               <div className="flex items-center gap-2">
                 <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden="true" />
