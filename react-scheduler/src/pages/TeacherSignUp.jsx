@@ -13,14 +13,6 @@ const useDocumentTitle = (title) => {
   }, [title]);
 };
 
-const response = await fetch('/api/teachers/login', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ email, password }),
-});
-
 export default function TeacherSignUp() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -37,7 +29,7 @@ export default function TeacherSignUp() {
     setError(null);
 
     try {
-      const registerResponse = await fetch(`${API_URL}/api/teachers/register`, {
+      const registerResponse = await fetch(`/api/teachers/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
@@ -47,7 +39,7 @@ export default function TeacherSignUp() {
         throw new Error(registerData.error || 'Failed to create account.');
       }
 
-      const loginResponse = await fetch(`${API_URL}/api/teachers/login`, {
+      const loginResponse = await fetch(`/api/teachers/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
