@@ -70,6 +70,8 @@ class _MinCostFlow:
         sink: int,
         max_flow: int,
         day_states: Dict[date, "_DayState"],
+        *,
+        on_assign=None,
     ) -> Tuple[int, int]:
         import heapq
 
@@ -143,6 +145,8 @@ class _MinCostFlow:
                     elif marker == "open":
                         day_key = edge.metadata[1]
                         open_edges[day_key] = True
+                    elif marker == "slot_student" and on_assign is not None:
+                        on_assign(edge.metadata, add_flow)
 
             for day_key in days_seen.keys():
                 state = day_states[day_key]
@@ -205,15 +209,20 @@ def generate_schedule(
             )
         inferred_slot_minutes = lesson_lengths.pop()
     else:
-        if any(length != inferred_slot_minutes for length in lesson_lengths):
-            raise ValueError("All students must share the configured slot_minutes length")
+        if any(length % inferred_slot_minutes != 0 for length in lesson_lengths):
+            raise ValueError(
+                "All students must have lesson lengths that are multiples of slot_minutes"
+            )
 
     if inferred_slot_minutes <= 0:
         raise ValueError("slot_minutes must be positive")
     if buffer_minutes < 0:
         raise ValueError("buffer_minutes must be non-negative")
 
-    effective_slot_minutes = inferred_slot_minutes + buffer_minutes
+    slots_required_by_student: Dict[int, int] = {
+        student.id: max(1, student.lesson_length // inferred_slot_minutes)
+        for student in students
+    }
 
     teacher_slots = _collect_teacher_slots(schedule, schedule.teacher_id)
     if not teacher_slots:
@@ -229,7 +238,7 @@ def generate_schedule(
 
     day_slot_map: Dict[date, List[int]] = {}
     slot_metadata: Dict[int, Tuple[date, datetime, int]] = {}
-    slot_students: Dict[int, List[int]] = {}
+    slot_students: Dict[int, List[Tuple[int, Tuple[int, ...]]]] = {}
     slot_counter = 0
 
     for day_key in sorted(teacher_slots.keys()):
@@ -240,23 +249,118 @@ def generate_schedule(
         day_slots: List[int] = []
 
         for position, start_time in enumerate(teacher_times):
-            available_students = [
-                student_id
-                for student_id in student_by_id.keys()
-                if start_time in student_slots.get(student_id, set())
-            ]
+            candidates: List[Tuple[int, Tuple[int, ...]]] = []
+            for student_id in student_by_id.keys():
+                availability = student_slots.get(student_id, set())
+                if start_time not in availability:
+                    continue
+                required_slots = slots_required_by_student.get(student_id, 1)
+                extra_slots: List[int] = []
+                if required_slots > 1:
+                    day_slots_for_teacher = teacher_times
+                    ok = True
+                    for offset in range(1, required_slots):
+                        next_index = position + offset
+                        if next_index >= len(day_slots_for_teacher):
+                            ok = False
+                            break
+                        expected_time = start_time + timedelta(
+                            minutes=offset * inferred_slot_minutes
+                        )
+                        next_start_time = day_slots_for_teacher[next_index]
+                        if next_start_time != expected_time:
+                            ok = False
+                            break
+                        if expected_time not in availability:
+                            ok = False
+                            break
+                    if not ok:
+                        continue
 
-            if not available_students:
+                    # Map the teacher slot positions to slot identifiers if they exist later.
+                    extra_ids: List[int] = []
+                    for offset in range(1, required_slots):
+                        next_index = position + offset
+                        # We'll map after slots are created; placeholder for now.
+                        extra_ids.append(-1)
+                    extra_slots = extra_ids
+
+                candidates.append((student_id, tuple(extra_slots)))
+
+            if not candidates:
                 continue
 
             slot_id = slot_counter
             slot_counter += 1
             slot_metadata[slot_id] = (day_key, start_time, position)
-            slot_students[slot_id] = available_students
+            slot_students[slot_id] = candidates
             day_slots.append(slot_id)
 
         if day_slots:
             day_slot_map[day_key] = day_slots
+
+    if not day_slot_map:
+        return {
+            "lessons": [],
+            "unscheduled_student_ids": [student.id for student in students],
+        }
+
+    invalid_slots: Set[int] = set()
+    for slot_id, (day_key, start_time, position) in list(slot_metadata.items()):
+        candidates = slot_students.get(slot_id, [])
+        if not candidates:
+            invalid_slots.add(slot_id)
+            continue
+
+        updated_candidates: List[Tuple[int, Tuple[int, ...]]] = []
+        day_slots = day_slot_map.get(day_key, [])
+        for student_id, _extra in candidates:
+            required_slots = slots_required_by_student.get(student_id, 1)
+            if required_slots <= 1:
+                updated_candidates.append((student_id, tuple()))
+                continue
+
+            availability = student_slots.get(student_id, set())
+            new_extra: List[int] = []
+            ok = True
+            for offset in range(1, required_slots):
+                next_index = position + offset
+                if next_index >= len(day_slots):
+                    ok = False
+                    break
+                next_slot_id = day_slots[next_index]
+                next_day, next_start_time, _ = slot_metadata[next_slot_id]
+                if next_day != day_key:
+                    ok = False
+                    break
+                expected_time = start_time + timedelta(minutes=offset * inferred_slot_minutes)
+                if next_start_time != expected_time:
+                    ok = False
+                    break
+                if expected_time not in availability:
+                    ok = False
+                    break
+                new_extra.append(next_slot_id)
+
+            if ok:
+                updated_candidates.append((student_id, tuple(new_extra)))
+
+        if updated_candidates:
+            slot_students[slot_id] = updated_candidates
+        else:
+            invalid_slots.add(slot_id)
+
+    if invalid_slots:
+        for slot_id in invalid_slots:
+            slot_metadata.pop(slot_id, None)
+            slot_students.pop(slot_id, None)
+
+        for day_key, day_slots in list(day_slot_map.items()):
+            filtered = [slot_id for slot_id in day_slots if slot_id not in invalid_slots]
+            if filtered:
+                day_slot_map[day_key] = filtered
+            else:
+                day_slot_map.pop(day_key, None)
 
     if not day_slot_map:
         return {
@@ -286,6 +390,7 @@ def generate_schedule(
     solver = _MinCostFlow(sink + 1)
 
     day_states: Dict[date, _DayState] = {}
+    day_slot_edges: Dict[int, Tuple[int, int]] = {}
 
     for day_key, day_node in day_nodes.items():
         open_edge = solver.add_edge(
@@ -308,41 +413,86 @@ def generate_schedule(
             through_edge=through_edge,
         )
 
-    slot_to_student_edges: List[Tuple[int, int, int, int]] = []
+    slot_edges_by_slot: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
+    slot_to_student_edges: List[Tuple[int, int, int, int, Tuple[int, ...]]] = []
 
-    for slot_id, (day_key, _start_time, position) in slot_metadata.items():
+    for slot_id, (day_key, start_time, position) in slot_metadata.items():
+        candidates = slot_students.get(slot_id, [])
+        if not candidates:
+            continue
         day_node = day_nodes[day_key]
         slot_node = slot_nodes[slot_id]
         gap_cost = gap_penalty * position * position
-        solver.add_edge(
+        day_edge = solver.add_edge(
             day_node,
             slot_node,
             1,
             gap_cost,
             metadata=("day_slot", day_key, slot_id),
         )
+        day_slot_edges[slot_id] = day_edge
 
-        for student_id in slot_students[slot_id]:
+        for student_id, extra_slots in candidates:
             person_node = student_nodes[student_id]
+            required_slots = slots_required_by_student.get(student_id, 1)
+            bonus_cost = 0
+            if required_slots > 1:
+                bonus_cost = -100_000 * (required_slots - 1)
             edge_ref = solver.add_edge(
                 slot_node,
                 person_node,
                 1,
-                0,
-                metadata=("slot_student", slot_id, student_id),
+                bonus_cost,
+                metadata=("slot_student", slot_id, student_id, extra_slots),
             )
-            slot_to_student_edges.append((slot_id, student_id, edge_ref[0], edge_ref[1]))
+            slot_edges_by_slot[slot_id].append((edge_ref[0], edge_ref[1]))
+            slot_to_student_edges.append(
+                (slot_id, student_id, edge_ref[0], edge_ref[1], extra_slots)
+            )
 
     for student_id, node in student_nodes.items():
         solver.add_edge(node, sink, 1, 0, metadata=("student_sink", student_id))
 
     target_flow = len(student_by_id)
-    flow, total_cost = solver.successive_shortest_path(source, sink, target_flow, day_states)
+    blocked_slots: Set[int] = set()
+
+    def handle_assignment(metadata: Tuple, flow_amount: int) -> None:
+        if flow_amount <= 0:
+            return
+        marker = metadata[0] if metadata else None
+        if marker != "slot_student":
+            return
+        _slot_id, _student_id, extra_slots = metadata[1], metadata[2], metadata[3]
+        if not extra_slots:
+            return
+        for extra_slot_id in extra_slots:
+            if extra_slot_id in blocked_slots:
+                continue
+            blocked_slots.add(extra_slot_id)
+            if extra_slot_id in day_slot_edges:
+                day_u, day_index = day_slot_edges[extra_slot_id]
+                day_edge = solver.graph[day_u][day_index]
+                day_edge.cap = 0
+                reverse_edge = solver.graph[day_edge.to][day_edge.rev]
+                reverse_edge.cap = 0
+            for edge_u, edge_index in slot_edges_by_slot.get(extra_slot_id, []):
+                edge = solver.graph[edge_u][edge_index]
+                edge.cap = 0
+                reverse = solver.graph[edge.to][edge.rev]
+                reverse.cap = 0
+
+    flow, total_cost = solver.successive_shortest_path(
+        source,
+        sink,
+        target_flow,
+        day_states,
+        on_assign=handle_assignment,
+    )
 
     lessons: List[ScheduledLesson] = []
     assigned_student_ids = set()
 
-    for slot_id, student_id, edge_u, edge_index in slot_to_student_edges:
+    for slot_id, student_id, edge_u, edge_index, extra_slots in slot_to_student_edges:
         edge = solver.graph[edge_u][edge_index]
         if edge.cap == 0:
             day_key, start_time, _position = slot_metadata[slot_id]
@@ -353,7 +503,8 @@ def generate_schedule(
                     student_id=student.id,
                     student_name=student.name,
                     start_time=start_time,
-                    end_time=start_time + timedelta(minutes=effective_slot_minutes),
+                    end_time=start_time
+                    + timedelta(minutes=student.lesson_length + buffer_minutes),
                     day=day_key,
                 )
             )

@@ -221,3 +221,82 @@ def test_generate_schedule_reports_unscheduled_students(monkeypatch, teacher_id)
     assert len(result["lessons"]) == 2
     assert result["scheduled_count"] == 2
     assert result["unscheduled_student_ids"] == [3]
+
+
+def test_generate_schedule_allows_multiple_slots_per_student(monkeypatch, teacher_id):
+    day_start = datetime(2024, 1, 5, 9, 0)
+
+    students = [
+        _make_student(1, lesson_length=60),
+        _make_student(2, lesson_length=30),
+        _make_student(3, lesson_length=30),
+    ]
+
+    teacher_slots = [
+        _make_teacher_availability(day_start + timedelta(minutes=30 * offset), teacher_id)
+        for offset in range(4)
+    ]
+
+    availabilities = teacher_slots + [
+        _make_student_availability(day_start, 1),
+        _make_student_availability(day_start + timedelta(minutes=30), 1),
+        _make_student_availability(day_start + timedelta(minutes=30), 2),
+        _make_student_availability(day_start + timedelta(minutes=60), 2),
+        _make_student_availability(day_start + timedelta(minutes=90), 3),
+    ]
+
+    schedule = SimpleNamespace(
+        id=4,
+        teacher_id=teacher_id,
+        days=json.dumps([day_start.date().isoformat()]),
+        dates=[day_start.date().isoformat()],
+        students=students,
+        availabilities=availabilities,
+    )
+
+    _patch_schedule(monkeypatch, schedule)
+
+    result = schedule_service.generate_schedule(4, slot_minutes=30)
+
+    assert result["scheduled_count"] == 3
+    assert result["unscheduled_student_ids"] == []
+
+    lessons_by_student = {lesson["student_id"]: lesson for lesson in result["lessons"]}
+
+    assert lessons_by_student[1]["start_time"] == day_start.isoformat()
+    assert lessons_by_student[1]["end_time"] == (
+        day_start + timedelta(minutes=60)
+    ).isoformat()
+    assert lessons_by_student[2]["start_time"] == (
+        day_start + timedelta(minutes=60)
+    ).isoformat()
+
+
+def test_generate_schedule_requires_multiple_of_slot(monkeypatch, teacher_id):
+    day_start = datetime(2024, 1, 6, 9, 0)
+
+    students = [_make_student(1, lesson_length=45), _make_student(2, lesson_length=30)]
+
+    teacher_slots = [
+        _make_teacher_availability(day_start + timedelta(minutes=30 * offset), teacher_id)
+        for offset in range(2)
+    ]
+
+    availabilities = teacher_slots + [
+        _make_student_availability(day_start, 1),
+        _make_student_availability(day_start + timedelta(minutes=30), 2),
+    ]
+
+    schedule = SimpleNamespace(
+        id=5,
+        teacher_id=teacher_id,
+        days=json.dumps([day_start.date().isoformat()]),
+        dates=[day_start.date().isoformat()],
+        students=students,
+        availabilities=availabilities,
+    )
+
+    _patch_schedule(monkeypatch, schedule)
+
+    with pytest.raises(ValueError, match="multiples of slot_minutes"):
+        schedule_service.generate_schedule(5, slot_minutes=30)
