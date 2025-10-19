@@ -5,12 +5,14 @@ import {
   ButtonGroup,
   Card,
   CardBody,
+  IconButton,
   Input,
   List,
   ListItem,
+  Tooltip,
   Typography,
-  Radio,
 } from "@material-tailwind/react";
+import { TrashIcon } from "@heroicons/react/24/outline";
 import TeacherLayout from "../components/TeacherLayout";
 import { createSchedule as createScheduleRequest } from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -52,10 +54,7 @@ const steps = [
 
 const createId = () => Math.random().toString(36).slice(2, 10);
 
-const defaultStudents = [
-  { id: createId(), name: "Alex Chen", lessonLength: 60 },
-  { id: createId(), name: "Brianna Patel", lessonLength: 30 },
-];
+const defaultStudents = [];
 
 const slugify = (value) =>
   value
@@ -69,7 +68,7 @@ export default function CreateSchedule() {
   const location = useLocation();
   const { token } = useAuth();
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
+  const [title, setTitle] = useState(location.state?.title ?? "");
   const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? []);
   const [startTime, setStartTime] = useState(location.state?.startTime ?? "09:00");
   const [endTime, setEndTime] = useState(location.state?.endTime ?? "17:00");
@@ -77,6 +76,8 @@ export default function CreateSchedule() {
   const [dragSelection, setDragSelection] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [studentError, setStudentError] = useState(null);
+  const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   // Generate upcoming date options starting from the closest Sunday
   const upcomingDateOptions = useMemo(() => {
@@ -184,6 +185,7 @@ export default function CreateSchedule() {
 
 
   const handleAddStudent = () => {
+    setStudentError(null);
     setStudents((previous) => [
       ...previous,
       { id: createId(), name: "", lessonLength: 60 },
@@ -191,6 +193,7 @@ export default function CreateSchedule() {
   };
 
   const handleStudentChange = (id, updates) => {
+    setStudentError(null);
     setStudents((previous) =>
       previous.map((student) =>
         student.id === id
@@ -203,7 +206,50 @@ export default function CreateSchedule() {
     );
   };
 
+  const handleRemoveStudent = (id) => {
+    setStudentError(null);
+    setStudents((previous) => previous.filter((student) => student.id !== id));
+  };
+
+  const validateStudents = () => {
+    if (students.length === 0) {
+      setStudentError(null);
+      return true;
+    }
+
+    const trimmedNames = students.map((student) => (student.name ?? "").trim());
+
+    if (trimmedNames.some((name) => name === "")) {
+      setStudentError("Enter a name for each student or remove unused rows.");
+      return false;
+    }
+
+    const seen = new Set();
+    for (const name of trimmedNames) {
+      const normalized = name.toLowerCase();
+      if (seen.has(normalized)) {
+        setStudentError("Student names must be unique.");
+        return false;
+      }
+      seen.add(normalized);
+    }
+
+    setStudentError(null);
+    return true;
+  };
+
+  const handleCopyShareLink = async () => {
+    const success = await copyToClipboard(`${getAppOrigin()}/s/${shareSlug}`);
+    if (success) {
+      setShareLinkCopied(true);
+      setTimeout(() => setShareLinkCopied(false), 1500);
+    }
+  };
+
   const goNext = () => {
+    if (step === 2 && !validateStudents()) {
+      return;
+    }
     if (step < steps.length - 1) {
       setStep((value) => value + 1);
     }
@@ -220,6 +266,11 @@ export default function CreateSchedule() {
       return;
     }
 
+    if (!validateStudents()) {
+      setStep(2);
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
 
@@ -229,12 +280,10 @@ export default function CreateSchedule() {
       start_time: startTime,
       end_time: endTime,
       slug: shareSlug,
-      students: students
-        .filter((student) => (student.name ?? "").trim() !== "" || student.lessonLength)
-        .map((student) => ({
-          name: student.name || "Unnamed student",
-          lesson_length: Number.parseInt(student.lessonLength, 10) || 30,
-        })),
+      students: students.map((student) => ({
+        name: (student.name ?? "").trim(),
+        lesson_length: Number.parseInt(student.lessonLength, 10) || 30,
+      })),
     };
 
     try {
@@ -371,9 +420,6 @@ export default function CreateSchedule() {
                 })}
               </div>
             </div>
-            <Typography variant="small" className="text-slate-400">
-              You can add or remove dates later from the schedule page.
-            </Typography>
             </div>
             
             {/* Time selection */}
@@ -426,7 +472,7 @@ export default function CreateSchedule() {
             <List className="divide-y divide-slate-100 rounded-2xl border border-slate-100">
               {students.map((student) => (
                 <ListItem key={student.id} className="block space-y-4 py-4">
-                  <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+                  <div className="space-y-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4 md:space-y-0">
                     <Input
                       label="Student name"
                       value={student.name}
@@ -437,7 +483,7 @@ export default function CreateSchedule() {
                       className={`${primaryInputFocusClasses} !border-0 focus:!border-0 !border-b-2 !border-b-purple-500`}
                       crossOrigin=""
                     />
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <Typography variant="small" className="text-slate-500">
                         Lesson length
                       </Typography>
@@ -462,11 +508,25 @@ export default function CreateSchedule() {
                           </Button>
                         ))}
                       </ButtonGroup>
+                      <IconButton
+                        color="red"
+                        variant="text"
+                        size="sm"
+                        onClick={() => handleRemoveStudent(student.id)}
+                        aria-label={`Remove ${student.name || "student"}`}
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
                     </div>
                   </div>
                 </ListItem>
               ))}
             </List>
+            {studentError ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {studentError}
+              </div>
+            ) : null}
             <Button color="gray" variant="outlined" onClick={handleAddStudent}>
               Add another student
             </Button>
@@ -588,14 +648,16 @@ export default function CreateSchedule() {
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Button
-                    color="purple"
-                    variant="outlined"
-                    className={primaryButtonOutlinedClasses}
-                    onClick={() => copyToClipboard(`${getAppOrigin()}/s/${shareSlug}`)}
-                  >
-                    Copy link
-                  </Button>
+                  <Tooltip content="Copied!" open={shareLinkCopied} placement="top">
+                    <Button
+                      color="purple"
+                      variant="outlined"
+                      className={primaryButtonOutlinedClasses}
+                      onClick={handleCopyShareLink}
+                    >
+                      Copy link
+                    </Button>
+                  </Tooltip>
                   <Button
                     color="purple"
                     className={primaryButtonFilledClasses}

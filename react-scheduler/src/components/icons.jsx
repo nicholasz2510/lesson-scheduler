@@ -26,10 +26,9 @@ export function DotsVerticalIcon({ className }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path
-        d="M12 6.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 6a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-        fill="currentColor"
-      />
+      <circle cx="12" cy="6" r="1.25" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
+      <circle cx="12" cy="18" r="1.25" fill="currentColor" />
     </svg>
   );
 }

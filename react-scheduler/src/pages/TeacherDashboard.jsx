@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Typography } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
@@ -15,7 +15,7 @@ export default function TeacherDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useDocumentTitle("Professor dashboard");
+  useDocumentTitle("Music teacher dashboard");
 
   useEffect(() => {
     if (!token) {
@@ -65,11 +65,6 @@ export default function TeacherDashboard() {
     }
   };
 
-  const totalStudents = useMemo(
-    () => schedules.reduce((sum, item) => sum + (item.student_count ?? 0), 0),
-    [schedules]
-  );
-
   const actions = (
     <Button
       color="purple"
@@ -88,24 +83,6 @@ export default function TeacherDashboard() {
           {error}
         </div>
       ) : null}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <Typography variant="small" className="text-slate-500">
-            Active schedules
-          </Typography>
-          <Typography variant="h4" className="font-display text-slate-800">
-            {schedules.length}
-          </Typography>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <Typography variant="small" className="text-slate-500">
-            Students included
-          </Typography>
-          <Typography variant="h4" className="font-display text-slate-800">
-            {totalStudents}
-          </Typography>
-        </div>
-      </div>
       {isLoading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
           Loading schedules…

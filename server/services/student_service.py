@@ -28,7 +28,14 @@ def create_student(data: dict, teacher_id: int) -> Student:
     if schedule is None:
         raise LookupError('Schedule not found for this teacher.')
 
-    name = (data.get('name') or '').strip() or 'Unnamed student'
+    name = (data.get('name') or '').strip()
+    if not name:
+        raise ValueError('Student name is required.')
+
+    existing_names = {student.name.lower() for student in schedule.students}
+    if name.lower() in existing_names:
+        raise ValueError('Student names must be unique within a schedule.')
+
     lesson_length = data.get('lesson_length') or 30
     try:
         lesson_length = int(lesson_length)
@@ -52,7 +59,19 @@ def update_student(student_id: int, teacher_id: int, data: dict) -> Student:
         raise LookupError('Student not found.')
 
     if 'name' in data:
-        student.name = (data.get('name') or '').strip() or 'Unnamed student'
+        name = (data.get('name') or '').strip()
+        if not name:
+            raise ValueError('Student name cannot be empty.')
+
+        existing_names = {
+            other.name.lower()
+            for other in student.schedule.students
+            if other.id != student.id
+        }
+        if name.lower() in existing_names:
+            raise ValueError('Student names must be unique within a schedule.')
+
+        student.name = name
 
     if 'lesson_length' in data:
         try:

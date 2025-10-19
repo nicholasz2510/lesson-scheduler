@@ -10,21 +10,35 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import { DotsVerticalIcon } from "./icons";
-import {
-  formatScheduleDates,
-  generateTimeSlots,
-  summarizeAvailabilityWindow,
-} from "../utils/schedule";
-import {
-  brandColor,
-  brandColorDeep,
-  brandSurface,
-  brandSurfaceLight,
-} from "../utils/theme";
+import { formatScheduleDates } from "../utils/schedule";
+import { brandColor } from "../utils/theme";
 
 export default function ScheduleCard({ schedule, onOpen, onDelete }) {
-  const timeSlots = generateTimeSlots(schedule.start_time, schedule.end_time);
-  const availabilityPreview = summarizeAvailabilityWindow(timeSlots);
+  const totalStudents = schedule.student_count ?? 0;
+  const submittedCount = schedule.submitted_count ?? 0;
+  const pendingStudents = schedule.pending_students ?? [];
+
+  const formatPendingList = (names) => {
+    if (!names.length) {
+      return "";
+    }
+
+    if (names.length === 1) {
+      return names[0];
+    }
+
+    if (names.length === 2) {
+      return `${names[0]} and ${names[1]}`;
+    }
+
+    return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+  };
+
+  const submissionSummary = `${submittedCount}/${totalStudents} students submitted`;
+  const pendingSummary =
+    pendingStudents.length > 0
+      ? `Still waiting on ${formatPendingList(pendingStudents)}`
+      : "All students have submitted";
 
   return (
     <Card className="h-full cursor-pointer transition hover:-translate-y-1 hover:shadow-xl" onClick={() => onOpen(schedule)}>
@@ -62,21 +76,13 @@ export default function ScheduleCard({ schedule, onOpen, onDelete }) {
             </MenuList>
           </Menu>
         </div>
-        <div
-          className="rounded-xl p-4"
-          style={{
-            background: `linear-gradient(90deg, ${brandSurface} 0%, ${brandSurfaceLight} 100%)`,
-          }}
-        >
-          <Typography variant="small" style={{ color: brandColor }}>
-            Availability preview
-          </Typography>
-          <Typography variant="paragraph" className="font-medium" style={{ color: brandColorDeep }}>
-            {availabilityPreview || "Set availability"}
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <Typography variant="small" className="text-slate-600">
+            {pendingSummary}
           </Typography>
         </div>
         <div className="mt-auto flex items-center justify-between text-sm text-slate-500">
-          <span>{schedule.student_count ?? 0} students</span>
+          <span>{submissionSummary}</span>
           <span className="font-medium" style={{ color: brandColor }}>
             Open schedule
           </span>
@@ -94,6 +100,8 @@ ScheduleCard.propTypes = {
     start_time: PropTypes.string,
     end_time: PropTypes.string,
     student_count: PropTypes.number,
+    submitted_count: PropTypes.number,
+    pending_students: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   onOpen: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

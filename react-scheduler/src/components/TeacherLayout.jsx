@@ -73,7 +73,7 @@ export default function TeacherLayout({ pageTitle, actions, children }) {
                 </IconButton>
                 <div>
                   <Typography variant="small" className="uppercase tracking-wide text-slate-400">
-                    Professor portal
+                    Music teacher portal
                   </Typography>
                   <Typography variant="h5" className="font-display text-slate-800">
                     {pageTitle}

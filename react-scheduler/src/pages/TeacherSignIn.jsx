@@ -18,7 +18,7 @@ export default function TeacherSignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useDocumentTitle("Professor sign in");
+  useDocumentTitle("Music teacher sign in");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +73,7 @@ export default function TeacherSignIn() {
         <div className="space-y-6 p-8">
           <div className="space-y-2 text-center">
             <h2 className="text-2xl font-bold font-display text-slate-800">
-              Professor sign in
+              Music teacher sign in
             </h2>
             <p className="text-sm text-slate-500">
               Access your MusiCal schedules and manage availability.
