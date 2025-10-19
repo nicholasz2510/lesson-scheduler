@@ -11,14 +11,32 @@ import {
 } from "@material-tailwind/react";
 import { DotsVerticalIcon } from "./icons";
 import { formatScheduleDates } from "../data/mockData";
-import {
-  brandColor,
-  brandColorDeep,
-  brandSurface,
-  brandSurfaceLight,
-} from "../utils/theme";
+import { brandColor, brandSurface, brandSurfaceLight } from "../utils/theme";
 
 export default function ScheduleCard({ schedule, onOpen, onDelete }) {
+  const pendingCount = schedule.pendingStudents?.length ?? 0;
+  const submittedCount = Math.max(
+    0,
+    (schedule.totalStudents ?? 0) - pendingCount
+  );
+
+  const formatPendingNames = (names) => {
+    if (!names?.length) {
+      return "Everyone has submitted.";
+    }
+    if (names.length === 1) {
+      return `Still waiting on ${names[0]}`;
+    }
+    if (names.length === 2) {
+      return `Still waiting on ${names[0]} and ${names[1]}`;
+    }
+    const remaining = names.slice(0, -1).join(", ");
+    const last = names[names.length - 1];
+    return `Still waiting on ${remaining}, and ${last}`;
+  };
+
+  const waitingText = formatPendingNames(schedule.pendingStudents);
+
   return (
     <Card className="h-full cursor-pointer transition hover:-translate-y-1 hover:shadow-xl" onClick={() => onOpen(schedule)}>
       <CardBody className="flex h-full flex-col gap-4">
@@ -61,15 +79,14 @@ export default function ScheduleCard({ schedule, onOpen, onDelete }) {
             background: `linear-gradient(90deg, ${brandSurface} 0%, ${brandSurfaceLight} 100%)`,
           }}
         >
-          <Typography variant="small" style={{ color: brandColor }}>
-            Availability preview
-          </Typography>
-          <Typography variant="paragraph" className="font-medium" style={{ color: brandColorDeep }}>
-            {schedule.availabilityPreview}
+          <Typography variant="paragraph" className="font-medium" style={{ color: brandColor }}>
+            {waitingText}
           </Typography>
         </div>
         <div className="mt-auto flex items-center justify-between text-sm text-slate-500">
-          <span>{schedule.students} students</span>
+          <span>
+            {submittedCount}/{schedule.totalStudents} students submitted
+          </span>
           <span className="font-medium" style={{ color: brandColor }}>
             Open schedule
           </span>
@@ -84,8 +101,8 @@ ScheduleCard.propTypes = {
     id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     dates: PropTypes.arrayOf(PropTypes.string).isRequired,
-    availabilityPreview: PropTypes.string,
-    students: PropTypes.number,
+    totalStudents: PropTypes.number.isRequired,
+    pendingStudents: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
   onOpen: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

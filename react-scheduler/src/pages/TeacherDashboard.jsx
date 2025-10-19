@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Typography } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
@@ -22,11 +22,6 @@ export default function TeacherDashboard() {
     setSchedules((items) => items.filter((item) => item.id !== schedule.id));
   };
 
-  const totalStudents = useMemo(
-    () => schedules.reduce((sum, item) => sum + (item.students ?? 0), 0),
-    [schedules]
-  );
-
   const actions = (
     <Button
       color="purple"
@@ -40,24 +35,6 @@ export default function TeacherDashboard() {
 
   return (
     <TeacherLayout pageTitle="Your schedules" actions={actions}>
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <Typography variant="small" className="text-slate-500">
-            Active schedules
-          </Typography>
-          <Typography variant="h4" className="font-display text-slate-800">
-            {schedules.length}
-          </Typography>
-        </div>
-        <div className="rounded-2xl bg-white p-6 shadow-sm">
-          <Typography variant="small" className="text-slate-500">
-            Students included
-          </Typography>
-          <Typography variant="h4" className="font-display text-slate-800">
-            {totalStudents}
-          </Typography>
-        </div>
-      </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {schedules.map((schedule) => (
           <ScheduleCard

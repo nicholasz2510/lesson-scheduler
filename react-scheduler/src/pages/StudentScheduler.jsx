@@ -3,11 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button, Card, CardBody, Typography } from "@material-tailwind/react";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import AvailabilityGrid from "../components/AvailabilityGrid";
-import {
-  createBlankAvailability,
-  formatScheduleDates,
-  mockScheduleDetails,
-} from "../data/mockData";
+import { createBlankAvailability, mockScheduleDetails } from "../data/mockData";
 import useDocumentTitle from "../utils/useDocumentTitle";
 import {
   brandColor,

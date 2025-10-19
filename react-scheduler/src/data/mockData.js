@@ -1,4 +1,4 @@
-import { addDays, format } from "date-fns";
+import { format } from "date-fns";
 
 export const timeSlots = [
   "09:00",
@@ -72,22 +72,22 @@ export const mockSchedules = [
     id: "spring-recital-week",
     title: "Spring Recital Week",
     dates: ["2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20"],
-    availabilityPreview: "10:00 AM – 3:00 PM",
-    students: 12,
+    totalStudents: 12,
+    pendingStudents: ["Alyssa", "Mark", "Jeff"],
   },
   {
     id: "juries-midterm",
     title: "Juries Midterm Block",
     dates: ["2025-04-05", "2025-04-06"],
-    availabilityPreview: "9:00 AM – 1:00 PM",
-    students: 8,
+    totalStudents: 8,
+    pendingStudents: ["Jordan", "Priya"],
   },
   {
     id: "makeup-lessons",
     title: "Make-Up Lessons",
     dates: ["2025-05-01"],
-    availabilityPreview: "12:00 PM – 5:00 PM",
-    students: 5,
+    totalStudents: 5,
+    pendingStudents: [],
   },
 ];
 
