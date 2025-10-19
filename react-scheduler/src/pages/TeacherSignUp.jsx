@@ -18,7 +18,7 @@ export default function TeacherSignUp() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useDocumentTitle("Create professor account");
+  useDocumentTitle("Create music teacher account");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,7 +73,7 @@ export default function TeacherSignUp() {
         <div className="space-y-6 p-8">
           <div className="space-y-2 text-center">
             <h2 className="text-2xl font-bold font-display text-slate-800">
-              Create your professor account
+              Create your music teacher account
             </h2>
             <p className="text-sm text-slate-500">
               Join MusiCal to build schedules and gather availability from your studio.

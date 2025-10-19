@@ -104,7 +104,7 @@ export default function ScheduleDetail() {
   }, [scheduleId, token]);
 
   useDocumentTitle(
-    schedule ? `${schedule.title} – Professor view` : "Schedule – Professor view"
+    schedule ? `${schedule.title} – Music teacher view` : "Schedule – Music teacher view"
   );
 
   useEffect(() => {
@@ -585,7 +585,7 @@ export default function ScheduleDetail() {
           </Typography>
         </div>
         <Chip
-          value={schedule.is_finalized ? "Finalized" : "Professor view"}
+          value={schedule.is_finalized ? "Finalized" : "Music teacher view"}
           color="purple"
           variant="filled"
           className={primaryChipClasses}

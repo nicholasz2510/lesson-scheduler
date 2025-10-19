@@ -15,7 +15,7 @@ export default function TeacherDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useDocumentTitle("Professor dashboard");
+  useDocumentTitle("Music teacher dashboard");
 
   useEffect(() => {
     if (!token) {
