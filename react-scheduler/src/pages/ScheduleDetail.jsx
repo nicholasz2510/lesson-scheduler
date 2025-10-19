@@ -543,29 +543,19 @@ export default function ScheduleDetail() {
   }
 
   const actions = (
-    <>
-      <Tooltip content="Copied!" open={shareLinkCopied} placement="bottom">
-        <span>
-          <Button
-            variant="outlined"
-            color="purple"
-            className={primaryButtonOutlinedClasses}
-            onClick={handleCopyShareLink}
-            disabled={!shareLink}
-          >
-            Share link
-          </Button>
-        </span>
-      </Tooltip>
-      <Button
-        color="purple"
-        className={primaryButtonFilledClasses}
-        onClick={handleRunScheduling}
-        disabled={scheduling || savingAvailability}
-      >
-        {scheduling ? "Scheduling…" : "Schedule!"}
-      </Button>
-    </>
+    <Tooltip content="Copied!" open={shareLinkCopied} placement="bottom">
+      <span>
+        <Button
+          variant="outlined"
+          color="purple"
+          className={primaryButtonOutlinedClasses}
+          onClick={handleCopyShareLink}
+          disabled={!shareLink}
+        >
+          Share link
+        </Button>
+      </span>
+    </Tooltip>
   );
 
   return (
@@ -585,7 +575,7 @@ export default function ScheduleDetail() {
           </Typography>
         </div>
         <Chip
-          value={schedule.is_finalized ? "Finalized" : "Music teacher view"}
+          value="Music teacher view"
           color="purple"
           variant="filled"
           className={primaryChipClasses}
@@ -614,13 +604,18 @@ export default function ScheduleDetail() {
           </div>
           <Card>
             <CardBody className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <Typography variant="h6" className="font-display text-slate-800">
                   Suggested schedule
                 </Typography>
-                <Typography variant="small" className="text-slate-400">
-                  Based on submitted availability
-                </Typography>
+                <Button
+                  color="purple"
+                  className={primaryButtonFilledClasses}
+                  onClick={handleRunScheduling}
+                  disabled={scheduling || savingAvailability}
+                >
+                  {scheduling ? "Generating…" : "Generate schedule"}
+                </Button>
               </div>
               {lessonCards.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center">
@@ -635,17 +630,21 @@ export default function ScheduleDetail() {
                       key={lesson.id}
                       className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white p-4"
                     >
-                      <div>
-                        <Typography variant="h6" className="font-display text-slate-800">
-                          {lesson.name}
-                        </Typography>
+                      <Typography variant="h6" className="font-display text-slate-800">
+                        {lesson.name}
+                      </Typography>
+                      <div className="text-right">
                         <Typography variant="small" className="text-slate-500">
                           {lesson.dayLabel}
                         </Typography>
+                        <Typography
+                          variant="h6"
+                          className="font-display"
+                          style={{ color: brandColor }}
+                        >
+                          {lesson.rangeLabel}
+                        </Typography>
                       </div>
-                      <Typography variant="h6" className="font-display" style={{ color: brandColor }}>
-                        {lesson.rangeLabel}
-                      </Typography>
                     </div>
                   ))}
                 </div>
@@ -715,7 +714,7 @@ export default function ScheduleDetail() {
                                 name: event.target.value,
                               })
                             }
-                            className={`${primaryInputFocusClasses} !border-0 focus:!border-0 !border-b-2 !border-b-purple-500`}
+                            className={`${primaryInputFocusClasses} !border-0 focus:!border-0 !border-b-2 !border-b-[#62439d]`}
                             crossOrigin=""
                           />
                           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -723,11 +722,11 @@ export default function ScheduleDetail() {
                               <Typography variant="small" className="text-slate-500">
                                 Lesson length
                               </Typography>
-                              <ButtonGroup variant="outlined" color="purple" size="sm">
+                              <ButtonGroup variant="outlined" color="gray" size="sm">
                                 {[30, 60, 90].map((length) => (
                                   <Button
                                     key={length}
-                                    color={student.lessonLength === length ? "purple" : "gray"}
+                                    color="gray"
                                     variant={
                                       student.lessonLength === length ? "filled" : "text"
                                     }
