@@ -33,6 +33,7 @@ export const formatScheduleDates = (dates) => {
   )}`;
 };
 
+
 export const formatSlotLabel = (slot) => {
   const [hour, minute] = slot.split(":").map(Number);
   const date = new Date();
@@ -102,6 +103,7 @@ export const mockScheduleDetails = {
     id: "spring-recital-week",
     title: "Spring Recital Week",
     linkSlug: "spring-recital-week",
+    schedulingType: "specific-dates",
     dates: ["2025-03-17", "2025-03-18", "2025-03-19", "2025-03-20"],
     students: studentRoster,
     availability: makeWindowAvailability(
@@ -114,6 +116,7 @@ export const mockScheduleDetails = {
     id: "juries-midterm",
     title: "Juries Midterm Block",
     linkSlug: "juries-midterm",
+    schedulingType: "specific-dates",
     dates: ["2025-04-05", "2025-04-06"],
     students: studentRoster,
     availability: makeWindowAvailability(
@@ -126,6 +129,7 @@ export const mockScheduleDetails = {
     id: "makeup-lessons",
     title: "Make-Up Lessons",
     linkSlug: "makeup-lessons",
+    schedulingType: "specific-dates",
     dates: ["2025-05-01"],
     students: studentRoster,
     availability: makeWindowAvailability(["2025-05-01"], "12:00", "16:30"),
@@ -136,11 +140,3 @@ export const teacherProfile = {
   name: "Prof. Elena Martinez",
   email: "emartinez@music.edu",
 };
-
-export const upcomingDateOptions = (() => {
-  const today = new Date("2025-03-15T12:00:00");
-  return Array.from({ length: 10 }).map((_, index) => {
-    const date = addDays(today, index);
-    return format(date, "yyyy-MM-dd");
-  });
-})();

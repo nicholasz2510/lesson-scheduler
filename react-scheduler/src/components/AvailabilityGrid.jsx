@@ -5,8 +5,10 @@ import { format } from "date-fns";
 import { formatSlotLabel, timeSlots } from "../data/mockData";
 import { primaryButtonFilledClasses } from "../utils/theme";
 
-const formatDateHeader = (dateString) =>
-  format(new Date(dateString), "EEE, MMM d");
+const formatDateHeader = (dateString) => {
+  // Format date string like "2025-03-17" to "Mon, Mar 17"
+  return format(new Date(dateString), "EEE, MMM d");
+};
 
 export default function AvailabilityGrid({
   dates,

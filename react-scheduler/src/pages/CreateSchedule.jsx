@@ -9,9 +9,11 @@ import {
   List,
   ListItem,
   Typography,
+  Radio,
 } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
-import { formatScheduleDates, upcomingDateOptions } from "../data/mockData";
+import { formatScheduleDates } from "../data/mockData";
+import { addDays, format } from "date-fns";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
 import useDocumentTitle from "../utils/useDocumentTitle";
 import {
@@ -44,6 +46,8 @@ const steps = [
   },
 ];
 
+
+
 const createId = () => Math.random().toString(36).slice(2, 10);
 
 const defaultStudents = [
@@ -63,8 +67,23 @@ export default function CreateSchedule() {
   const location = useLocation();
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
-  const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? [upcomingDateOptions[1], upcomingDateOptions[2]]);
+  const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? []);
   const [students, setStudents] = useState(location.state?.students ?? defaultStudents);
+
+  // Generate upcoming date options starting from the closest Sunday
+  const upcomingDateOptions = useMemo(() => {
+    const today = new Date();
+    
+    // Find the closest Sunday before or on today
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const daysToSubtract = dayOfWeek;
+    const startDate = addDays(today, -daysToSubtract);
+    
+    return Array.from({ length: 35 }).map((_, index) => {
+      const date = addDays(startDate, index);
+      return format(date, "yyyy-MM-dd");
+    });
+  }, []);
 
   useDocumentTitle("Create schedule");
 
@@ -77,6 +96,7 @@ export default function CreateSchedule() {
         : [...previous, date].sort()
     );
   };
+
 
   const handleAddStudent = () => {
     setStudents((previous) => [
@@ -146,26 +166,68 @@ export default function CreateSchedule() {
             <Typography variant="small" className="text-slate-500">
               Select all dates for this schedule
             </Typography>
-            <div className="flex flex-wrap gap-3">
-              {upcomingDateOptions.map((date) => {
-                const isActive = selectedDates.includes(date);
-                return (
-                  <Button
-                    key={date}
-                    size="sm"
-                    color={isActive ? "purple" : "gray"}
-                    variant={isActive ? "filled" : "outlined"}
-                    className={
-                      isActive
-                        ? primaryButtonFilledClasses
-                        : primaryButtonOutlinedClasses
-                    }
-                    onClick={() => handleToggleDate(date)}
-                  >
-                    {formatScheduleDates([date])}
-                  </Button>
-                );
-              })}
+            <div className="max-w-2xl mx-auto">
+              {/* Day of week headers */}
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                  return (
+                    <div key={day} className="text-center text-xs font-semibold text-slate-500 py-2">
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Date grid */}
+              <div className="grid grid-cols-7 gap-2">
+                {upcomingDateOptions.slice(0, 35).map((date, index) => {
+                  const isActive = selectedDates.includes(date);
+                  const isPast = (() => {
+                    const [year, month, day] = date.split('-').map(Number);
+                    const today = new Date();
+                    const todayYear = today.getFullYear();
+                    const todayMonth = today.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+                    const todayDay = today.getDate();
+                    
+                    if (year < todayYear) return true;
+                    if (year > todayYear) return false;
+                    if (month < todayMonth) return true;
+                    if (month > todayMonth) return false;
+                    return day < todayDay;
+                  })();
+                  
+                  
+                  return (
+                    <Button
+                      key={date}
+                      size="sm"
+                      color={isActive ? "purple" : "gray"}
+                      variant={isActive ? "filled" : "outlined"}
+                      disabled={isPast}
+                      className={`w-full aspect-square p-2 text-xs ${
+                        isPast
+                          ? "opacity-50 cursor-not-allowed"
+                          : isActive
+                          ? primaryButtonFilledClasses
+                          : primaryButtonOutlinedClasses
+                      }`}
+                      onClick={() => !isPast && handleToggleDate(date)}
+                    >
+                       <div className="flex flex-col items-center">
+                         <span className="text-xs font-medium">
+                           {(() => {
+                             const monthNumber = parseInt(date.split('-')[1]);
+                             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                             return monthNames[monthNumber - 1];
+                           })()}
+                         </span>
+                         <span className="text-sm font-bold">
+                           {date.split('-')[2]}
+                         </span>
+                       </div>
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
             <Typography variant="small" className="text-slate-400">
               You can add or remove dates later from the schedule page.
