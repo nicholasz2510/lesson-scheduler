@@ -232,14 +232,19 @@ def generate_schedule(
     slot_students: Dict[int, List[int]] = {}
     slot_counter = 0
 
+    slot_duration = timedelta(minutes=effective_slot_minutes)
+
     for day_key in sorted(teacher_slots.keys()):
         if schedule_days and day_key not in schedule_days:
             continue
 
         teacher_times = sorted(teacher_slots[day_key])
         day_slots: List[int] = []
+        next_available_time: Optional[datetime] = None
 
-        for position, start_time in enumerate(teacher_times):
+        filtered_slots: List[Tuple[datetime, List[int]]] = []
+
+        for start_time in teacher_times:
             available_students = [
                 student_id
                 for student_id in student_by_id.keys()
@@ -249,6 +254,14 @@ def generate_schedule(
             if not available_students:
                 continue
 
+            if next_available_time is not None and start_time < next_available_time:
+                continue
+
+            filtered_slots.append((start_time, available_students))
+            next_available_time = start_time + slot_duration
+
+        for position, (start_time, available_students) in enumerate(filtered_slots):
+            
             slot_id = slot_counter
             slot_counter += 1
             slot_metadata[slot_id] = (day_key, start_time, position)
