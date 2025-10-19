@@ -272,6 +272,55 @@ def test_generate_schedule_allows_multiple_slots_per_student(monkeypatch, teache
     ).isoformat()
 
 
+def test_generate_schedule_prevents_overlapping_multi_slot_assignments(monkeypatch, teacher_id):
+    day_start = datetime(2024, 1, 7, 9, 0)
+
+    students = [
+        _make_student(1, lesson_length=60),
+        _make_student(2, lesson_length=30),
+        _make_student(3, lesson_length=30),
+    ]
+
+    teacher_slots = [
+        _make_teacher_availability(day_start + timedelta(minutes=30 * offset), teacher_id)
+        for offset in range(4)
+    ]
+
+    availabilities = teacher_slots + [
+        _make_student_availability(day_start, 1),
+        _make_student_availability(day_start + timedelta(minutes=30), 1),
+        _make_student_availability(day_start + timedelta(minutes=30), 2),
+        _make_student_availability(day_start + timedelta(minutes=60), 2),
+        _make_student_availability(day_start + timedelta(minutes=60), 3),
+    ]
+
+    schedule = SimpleNamespace(
+        id=6,
+        teacher_id=teacher_id,
+        days=json.dumps([day_start.date().isoformat()]),
+        dates=[day_start.date().isoformat()],
+        students=students,
+        availabilities=availabilities,
+    )
+
+    _patch_schedule(monkeypatch, schedule)
+
+    result = schedule_service.generate_schedule(6, slot_minutes=30)
+
+    lessons_by_student = {lesson["student_id"]: lesson for lesson in result["lessons"]}
+
+    assert lessons_by_student[1]["start_time"] == day_start.isoformat()
+    assert lessons_by_student[1]["end_time"] == (
+        day_start + timedelta(minutes=60)
+    ).isoformat()
+    # Student 2 conflicts with the second half of student 1's lesson, so only student 3 is scheduled
+    assert 2 not in lessons_by_student
+    assert lessons_by_student[3]["start_time"] == (
+        day_start + timedelta(minutes=60)
+    ).isoformat()
+    assert set(result["unscheduled_student_ids"]) == {2}
+
+
 def test_generate_schedule_requires_multiple_of_slot(monkeypatch, teacher_id):
     day_start = datetime(2024, 1, 6, 9, 0)
 

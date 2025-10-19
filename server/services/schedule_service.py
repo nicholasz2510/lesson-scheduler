@@ -489,25 +489,62 @@ def generate_schedule(
         on_assign=handle_assignment,
     )
 
-    lessons: List[ScheduledLesson] = []
-    assigned_student_ids = set()
+    potential_assignments: List[
+        Tuple[int, date, datetime, int, int, Tuple[int, ...], Student]
+    ] = []
 
     for slot_id, student_id, edge_u, edge_index, extra_slots in slot_to_student_edges:
         edge = solver.graph[edge_u][edge_index]
-        if edge.cap == 0:
-            day_key, start_time, _position = slot_metadata[slot_id]
-            student = student_by_id[student_id]
-            assigned_student_ids.add(student_id)
-            lessons.append(
-                ScheduledLesson(
-                    student_id=student.id,
-                    student_name=student.name,
-                    start_time=start_time,
-                    end_time=start_time
-                    + timedelta(minutes=student.lesson_length + buffer_minutes),
-                    day=day_key,
-                )
+        if edge.cap != 0:
+            continue
+
+        day_key, start_time, _position = slot_metadata[slot_id]
+        student = student_by_id[student_id]
+        required_slots = slots_required_by_student.get(student_id, 1)
+        potential_assignments.append(
+            (
+                required_slots,
+                day_key,
+                start_time,
+                slot_id,
+                student_id,
+                extra_slots,
+                student,
             )
+        )
+
+    potential_assignments.sort(
+        key=lambda item: (
+            -item[0],
+            item[1],
+            item[2],
+            item[6].name,
+        )
+    )
+
+    lessons: List[ScheduledLesson] = []
+    assigned_student_ids: Set[int] = set()
+    occupied_slots: Set[int] = set()
+
+    for required_slots, day_key, start_time, slot_id, student_id, extra_slots, student in potential_assignments:
+        needed_slots = (slot_id,) + tuple(extra_slots or ())
+        if any(slot in occupied_slots for slot in needed_slots):
+            continue
+
+        for slot in needed_slots:
+            occupied_slots.add(slot)
+
+        assigned_student_ids.add(student_id)
+        lessons.append(
+            ScheduledLesson(
+                student_id=student.id,
+                student_name=student.name,
+                start_time=start_time,
+                end_time=start_time
+                + timedelta(minutes=student.lesson_length + buffer_minutes),
+                day=day_key,
+            )
+        )
 
     lessons.sort(key=lambda lesson: (lesson.day, lesson.start_time, lesson.student_name))
     unscheduled = [student.id for student in students if student.id not in assigned_student_ids]
