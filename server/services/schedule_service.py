@@ -451,7 +451,10 @@ def _ensure_unique_slug(slug: str, schedule_id: Optional[int] = None) -> str:
 
 def list_teacher_schedules(teacher_id: int) -> List[Schedule]:
     return (
-        Schedule.query.options(joinedload(Schedule.students))
+        Schedule.query.options(
+            joinedload(Schedule.students),
+            joinedload(Schedule.availabilities),
+        )
         .filter_by(teacher_id=teacher_id)
         .order_by(Schedule.created_at.desc())
         .all()

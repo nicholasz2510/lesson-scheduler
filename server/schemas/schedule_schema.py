@@ -11,6 +11,8 @@ class ScheduleSchema(SQLAlchemyAutoSchema):
     dates = fields.Method("get_dates")
     finalized_at = auto_field(dump_only=True)
     student_count = fields.Method("get_student_count")
+    submitted_count = fields.Method("get_submitted_count")
+    pending_students = fields.Method("get_pending_students")
 
     class Meta:
         model = Schedule
@@ -27,6 +29,8 @@ class ScheduleSchema(SQLAlchemyAutoSchema):
             "finalized_at",
             "teacher_id",
             "student_count",
+            "submitted_count",
+            "pending_students",
         )
 
     def get_dates(self, obj):
@@ -37,6 +41,29 @@ class ScheduleSchema(SQLAlchemyAutoSchema):
         if students is None:
             return 0
         return len(students)
+
+    def get_submitted_count(self, obj):
+        availabilities = getattr(obj, 'availabilities', None) or []
+        submitted_student_ids = {
+            availability.student_id
+            for availability in availabilities
+            if availability.student_id is not None
+        }
+        return len(submitted_student_ids)
+
+    def get_pending_students(self, obj):
+        students = getattr(obj, 'students', None) or []
+        if not students:
+            return []
+
+        availabilities = getattr(obj, 'availabilities', None) or []
+        submitted_student_ids = {
+            availability.student_id
+            for availability in availabilities
+            if availability.student_id is not None
+        }
+
+        return [student.name for student in students if student.id not in submitted_student_ids]
 
 
 class ScheduleDetailSchema(ScheduleSchema):
