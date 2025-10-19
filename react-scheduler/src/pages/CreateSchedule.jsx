@@ -409,7 +409,7 @@ export default function CreateSchedule() {
                       onChange={(event) =>
                         handleStudentChange(student.id, { name: event.target.value })
                       }
-                      className={primaryInputFocusClasses}
+                      className={`${primaryInputFocusClasses} !border-0 focus:!border-0 !border-b-2 !border-b-purple-500`}
                       crossOrigin=""
                     />
                     <div className="flex items-center gap-3">
