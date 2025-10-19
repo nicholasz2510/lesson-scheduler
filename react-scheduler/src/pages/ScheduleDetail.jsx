@@ -746,13 +746,7 @@ export default function ScheduleDetail() {
                                 ))}
                               </ButtonGroup>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <Chip
-                                value={student.submitted ? "Submitted" : "Pending"}
-                                size="sm"
-                                color={student.submitted ? "green" : "gray"}
-                                variant={student.submitted ? "filled" : "outlined"}
-                              />
+                            <div className="flex justify-end">
                               <IconButton
                                 color="red"
                                 variant="text"
