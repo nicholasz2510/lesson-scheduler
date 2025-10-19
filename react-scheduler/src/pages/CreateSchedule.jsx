@@ -52,10 +52,7 @@ const steps = [
 
 const createId = () => Math.random().toString(36).slice(2, 10);
 
-const defaultStudents = [
-  { id: createId(), name: "Alex Chen", lessonLength: 60 },
-  { id: createId(), name: "Brianna Patel", lessonLength: 30 },
-];
+const defaultStudents = [];
 
 const slugify = (value) =>
   value
@@ -69,7 +66,7 @@ export default function CreateSchedule() {
   const location = useLocation();
   const { token } = useAuth();
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
+  const [title, setTitle] = useState(location.state?.title ?? "");
   const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? []);
   const [startTime, setStartTime] = useState(location.state?.startTime ?? "09:00");
   const [endTime, setEndTime] = useState(location.state?.endTime ?? "17:00");
