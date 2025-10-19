@@ -3,11 +3,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv 
 from models import User
-
+from database import db
 load_dotenv()
 
-# Initialize the database object
-db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
