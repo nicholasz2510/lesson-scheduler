@@ -13,9 +13,8 @@ const primaryCheckboxClasses = "h-4 w-4 text-purple-600 border-gray-300 rounded 
 export default function TeacherSignIn() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
-  const [email, setEmail] = useState("emartinez@music.edu");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -106,28 +105,6 @@ export default function TeacherSignIn() {
               />
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={() => setRemember((value) => !value)}
-                  id="remember-me"
-                  className={primaryCheckboxClasses}
-                  disabled={isLoading}
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
-              <button
-                type="button"
-                className="text-sm font-medium"
-                style={{ color: brandColor }}
-              >
-                Forgot password?
-              </button>
-            </div>
             <button
               type="submit"
               className={`w-full ${primaryButtonFilledClasses}`}
