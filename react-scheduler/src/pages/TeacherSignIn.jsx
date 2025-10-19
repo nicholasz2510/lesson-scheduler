@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 const brandColor = "#62439d";
 const brandSurface = "#f3e8ff";
@@ -8,14 +10,9 @@ const primaryButtonFilledClasses = "bg-purple-600 hover:bg-purple-700 text-white
 const primaryInputFocusClasses = "focus:ring-2 focus:ring-purple-500 focus:border-purple-500";
 const primaryCheckboxClasses = "h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500";
 
-const useDocumentTitle = (title) => {
-  useEffect(() => {
-    document.title = title;
-  }, [title]);
-};
-
 export default function TeacherSignIn() {
   const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("emartinez@music.edu");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -24,30 +21,20 @@ export default function TeacherSignIn() {
 
   useDocumentTitle("Professor sign in");
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/teacher/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/teachers/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign in.');
-      }
-
-      if (data.token) {
-        localStorage.setItem('jwt_token', data.token);
-        navigate("/teacher/dashboard");
-      }
+      await login({ email, password });
+      navigate("/teacher/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {

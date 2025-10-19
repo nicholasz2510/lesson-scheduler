@@ -10,6 +10,7 @@ from schemas.student_schema import StudentSchema
 class ScheduleSchema(SQLAlchemyAutoSchema):
     dates = fields.Method("get_dates")
     finalized_at = auto_field(dump_only=True)
+    student_count = fields.Method("get_student_count")
 
     class Meta:
         model = Schedule
@@ -25,10 +26,17 @@ class ScheduleSchema(SQLAlchemyAutoSchema):
             "is_finalized",
             "finalized_at",
             "teacher_id",
+            "student_count",
         )
 
     def get_dates(self, obj):
         return obj.dates
+
+    def get_student_count(self, obj):
+        students = getattr(obj, 'students', None)
+        if students is None:
+            return 0
+        return len(students)
 
 
 class ScheduleDetailSchema(ScheduleSchema):
@@ -46,6 +54,7 @@ class ScheduleDetailSchema(ScheduleSchema):
 
 class SchedulePublicSchema(ScheduleSchema):
     students = fields.Nested(StudentSchema, many=True)
+    availabilities = fields.Nested(AvailabilitySchema, many=True)
 
     class Meta(ScheduleSchema.Meta):
         fields = (
@@ -56,6 +65,7 @@ class SchedulePublicSchema(ScheduleSchema):
             "start_time",
             "end_time",
             "students",
+            "availabilities",
         )
 
 

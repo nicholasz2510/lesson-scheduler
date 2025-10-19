@@ -10,7 +10,11 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import { DotsVerticalIcon } from "./icons";
-import { formatScheduleDates } from "../data/mockData";
+import {
+  formatScheduleDates,
+  generateTimeSlots,
+  summarizeAvailabilityWindow,
+} from "../utils/schedule";
 import {
   brandColor,
   brandColorDeep,
@@ -19,6 +23,9 @@ import {
 } from "../utils/theme";
 
 export default function ScheduleCard({ schedule, onOpen, onDelete }) {
+  const timeSlots = generateTimeSlots(schedule.start_time, schedule.end_time);
+  const availabilityPreview = summarizeAvailabilityWindow(timeSlots);
+
   return (
     <Card className="h-full cursor-pointer transition hover:-translate-y-1 hover:shadow-xl" onClick={() => onOpen(schedule)}>
       <CardBody className="flex h-full flex-col gap-4">
@@ -65,11 +72,11 @@ export default function ScheduleCard({ schedule, onOpen, onDelete }) {
             Availability preview
           </Typography>
           <Typography variant="paragraph" className="font-medium" style={{ color: brandColorDeep }}>
-            {schedule.availabilityPreview}
+            {availabilityPreview || "Set availability"}
           </Typography>
         </div>
         <div className="mt-auto flex items-center justify-between text-sm text-slate-500">
-          <span>{schedule.students} students</span>
+          <span>{schedule.student_count ?? 0} students</span>
           <span className="font-medium" style={{ color: brandColor }}>
             Open schedule
           </span>
@@ -81,11 +88,12 @@ export default function ScheduleCard({ schedule, onOpen, onDelete }) {
 
 ScheduleCard.propTypes = {
   schedule: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     title: PropTypes.string.isRequired,
     dates: PropTypes.arrayOf(PropTypes.string).isRequired,
-    availabilityPreview: PropTypes.string,
-    students: PropTypes.number,
+    start_time: PropTypes.string,
+    end_time: PropTypes.string,
+    student_count: PropTypes.number,
   }).isRequired,
   onOpen: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

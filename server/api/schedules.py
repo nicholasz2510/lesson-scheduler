@@ -93,3 +93,27 @@ def finalize_schedule(current_teacher_id, schedule_id):
         return jsonify({"error": str(exc)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@schedules_bp.route('/<int:schedule_id>/generate', methods=['POST'])
+@token_required
+def generate_schedule(current_teacher_id, schedule_id):
+    data = request.get_json() or {}
+    try:
+        result = schedule_service.generate_schedule(
+            schedule_id,
+            teacher_id=current_teacher_id,
+            slot_minutes=data.get('slot_minutes'),
+            buffer_minutes=data.get('buffer_minutes', 0),
+            day_open_cost=data.get('day_open_cost', 10_000),
+            gap_penalty=data.get('gap_penalty', 5),
+        )
+        return jsonify(result), 200
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

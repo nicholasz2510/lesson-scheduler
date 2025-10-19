@@ -51,3 +51,47 @@ def update_availability(current_teacher_id, availability_id):
         return jsonify({"error": str(exc)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@availabilities_bp.route('/teacher/sync', methods=['POST'])
+@token_required
+def sync_teacher_availability(current_teacher_id):
+    data = request.get_json() or {}
+    schedule_id = data.get('schedule_id')
+    start_times = data.get('start_times') or []
+    try:
+        availabilities = availability_service.replace_teacher_availability(
+            schedule_id,
+            current_teacher_id,
+            start_times,
+        )
+        return jsonify(availabilities_schema.dump(availabilities)), 200
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), 403
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@availabilities_bp.route('/student/sync', methods=['POST'])
+def sync_student_availability():
+    data = request.get_json() or {}
+    schedule_id = data.get('schedule_id')
+    student_id = data.get('student_id')
+    start_times = data.get('start_times') or []
+    try:
+        availabilities = availability_service.replace_student_availability(
+            schedule_id,
+            student_id,
+            start_times,
+        )
+        return jsonify(availabilities_schema.dump(availabilities)), 200
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), 404
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

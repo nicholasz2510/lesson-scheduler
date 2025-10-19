@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
+import useDocumentTitle from "../utils/useDocumentTitle";
 
 const brandColor = "#62439d";
 const brandSurface = "#f3e8ff";
@@ -7,14 +9,9 @@ const brandSurfaceLight = "#faf5ff";
 const primaryButtonFilledClasses = "bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out";
 const primaryInputFocusClasses = "focus:ring-2 focus:ring-purple-500 focus:border-purple-500";
 
-const useDocumentTitle = (title) => {
-  useEffect(() => {
-    document.title = title;
-  }, [title]);
-};
-
 export default function TeacherSignUp() {
   const navigate = useNavigate();
+  const { register, isAuthenticated } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,37 +20,20 @@ export default function TeacherSignUp() {
 
   useDocumentTitle("Create professor account");
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/teacher/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const registerResponse = await fetch(`/api/teachers/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const registerData = await registerResponse.json();
-      if (!registerResponse.ok) {
-        throw new Error(registerData.error || 'Failed to create account.');
-      }
-
-      const loginResponse = await fetch(`/api/teachers/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const loginData = await loginResponse.json();
-      if (!loginResponse.ok) {
-        throw new Error(loginData.error || 'Account created, but failed to log in.');
-      }
-
-      if (loginData.token) {
-        localStorage.setItem('jwt_token', loginData.token);
-        navigate("/teacher/dashboard");
-      }
-
+      await register({ name, email, password });
+      navigate("/teacher/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {

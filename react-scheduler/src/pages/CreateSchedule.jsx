@@ -12,7 +12,9 @@ import {
   Radio,
 } from "@material-tailwind/react";
 import TeacherLayout from "../components/TeacherLayout";
-import { formatScheduleDates } from "../data/mockData";
+import { createSchedule as createScheduleRequest } from "../api";
+import { useAuth } from "../context/AuthContext.jsx";
+import { formatScheduleDates } from "../utils/schedule";
 import { addDays, format } from "date-fns";
 import { copyToClipboard, getAppOrigin } from "../utils/environment";
 import useDocumentTitle from "../utils/useDocumentTitle";
@@ -65,6 +67,7 @@ const slugify = (value) =>
 export default function CreateSchedule() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { token } = useAuth();
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
   const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? []);
@@ -72,6 +75,8 @@ export default function CreateSchedule() {
   const [endTime, setEndTime] = useState(location.state?.endTime ?? "17:00");
   const [students, setStudents] = useState(location.state?.students ?? defaultStudents);
   const [dragSelection, setDragSelection] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   // Generate upcoming date options starting from the closest Sunday
   const upcomingDateOptions = useMemo(() => {
@@ -210,17 +215,37 @@ export default function CreateSchedule() {
     }
   };
 
-  const handleFinish = () => {
-    const schedule = {
-      id: shareSlug,
+  const handleFinish = async () => {
+    if (!token) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    const payload = {
       title,
-      dates: selectedDates,
-      startTime,
-      endTime,
-      students,
+      dates: [...selectedDates].sort(),
+      start_time: startTime,
+      end_time: endTime,
+      slug: shareSlug,
+      students: students
+        .filter((student) => (student.name ?? "").trim() !== "" || student.lessonLength)
+        .map((student) => ({
+          name: student.name || "Unnamed student",
+          lesson_length: Number.parseInt(student.lessonLength, 10) || 30,
+        })),
     };
-    // TODO: replace with server call to persist schedule and generate share link.
-    navigate(`/teacher/schedules/${shareSlug}`, { state: { schedule } });
+
+    try {
+      const schedule = await createScheduleRequest(token, payload);
+      navigate(`/teacher/schedules/${schedule.id}`, { replace: true });
+    } catch (err) {
+      console.error("Failed to create schedule", err);
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderStepContent = () => {
@@ -535,6 +560,11 @@ export default function CreateSchedule() {
       <div className="mx-auto max-w-3xl">
         <Card className="shadow-xl">
           <CardBody className="space-y-8 p-8">
+            {error ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {error}
+              </div>
+            ) : null}
             <div className="space-y-2 text-center">
               <Typography variant="h4" className="font-display text-slate-800">
                 {steps[step].title}
@@ -570,8 +600,9 @@ export default function CreateSchedule() {
                     color="purple"
                     className={primaryButtonFilledClasses}
                     onClick={handleFinish}
+                    disabled={isSaving || selectedDates.length === 0}
                   >
-                    View schedule
+                    {isSaving ? "Saving…" : "View schedule"}
                   </Button>
                 </div>
               )}

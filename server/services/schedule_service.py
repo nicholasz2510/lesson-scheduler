@@ -181,12 +181,16 @@ def generate_schedule(
     buffer_minutes: int = 0,
     day_open_cost: int = 10_000,
     gap_penalty: int = 5,
+    teacher_id: Optional[int] = None,
 ) -> Dict[str, TypingIterable]:
     """Generate a lesson schedule using a min-cost max-flow model."""
 
     schedule: Optional[Schedule] = Schedule.query.get(schedule_id)
     if schedule is None:
-        raise ValueError(f"Schedule with id {schedule_id} not found")
+        raise LookupError("Schedule not found.")
+
+    if teacher_id is not None and schedule.teacher_id != teacher_id:
+        raise PermissionError('Teacher is not authorized for this schedule.')
 
     students: Sequence[Student] = schedule.students
     if not students:
@@ -447,7 +451,8 @@ def _ensure_unique_slug(slug: str, schedule_id: Optional[int] = None) -> str:
 
 def list_teacher_schedules(teacher_id: int) -> List[Schedule]:
     return (
-        Schedule.query.filter_by(teacher_id=teacher_id)
+        Schedule.query.options(joinedload(Schedule.students))
+        .filter_by(teacher_id=teacher_id)
         .order_by(Schedule.created_at.desc())
         .all()
     )
@@ -468,7 +473,10 @@ def get_schedule(schedule_id: int, teacher_id: Optional[int] = None) -> Optional
 
 def get_schedule_by_slug(slug: str) -> Optional[Schedule]:
     return (
-        Schedule.query.options(joinedload(Schedule.students))
+        Schedule.query.options(
+            joinedload(Schedule.students),
+            joinedload(Schedule.availabilities),
+        )
         .filter_by(slug=slug)
         .first()
     )

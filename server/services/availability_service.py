@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from extensions import db
 from models.models import Availability, Schedule, Student
@@ -101,6 +101,84 @@ def update_availability(availability_id: int, data: dict, teacher_id: Optional[i
     try:
         db.session.commit()
         return availability
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def replace_teacher_availability(
+    schedule_id: int,
+    teacher_id: int,
+    start_times: Iterable,
+) -> List[Availability]:
+    if not schedule_id:
+        raise ValueError('schedule_id is required.')
+
+    schedule = Schedule.query.filter_by(id=schedule_id, teacher_id=teacher_id).first()
+    if schedule is None:
+        raise LookupError('Schedule not found for this teacher.')
+
+    parsed_times = [_parse_datetime(value) for value in start_times]
+    unique_times = sorted({item for item in parsed_times})
+
+    try:
+        Availability.query.filter_by(
+            schedule_id=schedule_id,
+            teacher_id=teacher_id,
+        ).delete()
+
+        created: List[Availability] = []
+        for start_time in unique_times:
+            availability = Availability(
+                start_time=start_time,
+                schedule_id=schedule_id,
+                teacher_id=teacher_id,
+            )
+            db.session.add(availability)
+            created.append(availability)
+
+        db.session.commit()
+        return created
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def replace_student_availability(
+    schedule_id: int,
+    student_id: int,
+    start_times: Iterable,
+) -> List[Availability]:
+    if not schedule_id:
+        raise ValueError('schedule_id is required.')
+    if not student_id:
+        raise ValueError('student_id is required.')
+
+    student = Student.query.filter_by(id=student_id, schedule_id=schedule_id).first()
+    if student is None:
+        raise LookupError('Student not found for this schedule.')
+
+    parsed_times = [_parse_datetime(value) for value in start_times]
+    unique_times = sorted({item for item in parsed_times})
+
+    try:
+        Availability.query.filter_by(
+            schedule_id=schedule_id,
+            student_id=student_id,
+        ).delete()
+
+        created: List[Availability] = []
+        for start_time in unique_times:
+            availability = Availability(
+                start_time=start_time,
+                schedule_id=schedule_id,
+                student_id=student_id,
+            )
+            db.session.add(availability)
+            created.append(availability)
+
+        db.session.commit()
+        return created
     except Exception:
         db.session.rollback()
         raise
