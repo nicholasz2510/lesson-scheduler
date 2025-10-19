@@ -504,6 +504,18 @@ def create_schedule(data: dict, teacher_id: int) -> Schedule:
     incoming_slug = data.get('slug') or _slugify(title)
     slug = _ensure_unique_slug(incoming_slug)
 
+    student_payloads = data.get('students') or []
+    seen_student_names = set()
+    for student_payload in student_payloads:
+        name = (student_payload.get('name') or '').strip()
+        if not name:
+            raise ValueError('Student names cannot be empty.')
+
+        normalized = name.lower()
+        if normalized in seen_student_names:
+            raise ValueError(f'Duplicate student name: {name}')
+        seen_student_names.add(normalized)
+
     schedule = Schedule(
         title=title,
         slug=slug,
@@ -517,8 +529,8 @@ def create_schedule(data: dict, teacher_id: int) -> Schedule:
         db.session.add(schedule)
         db.session.flush()
 
-        for student_payload in data.get('students') or []:
-            name = (student_payload.get('name') or '').strip() or 'Unnamed student'
+        for student_payload in student_payloads:
+            name = (student_payload.get('name') or '').strip()
             lesson_length = student_payload.get('lesson_length') or 30
             try:
                 lesson_length = int(lesson_length)
