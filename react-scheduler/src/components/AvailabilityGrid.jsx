@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { Fragment, useState, useRef, useEffect } from "react"; // 👈 1. Import useEffect
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { formatSlotLabel, timeSlots } from "../data/mockData";
-import { primaryButtonFilledClasses } from "../utils/theme";
+import { brandColor, primaryButtonFilledClasses } from "../utils/theme";
 
 // (formatDateHeader function remains the same)
 const formatDateHeader = (dateString) => {
@@ -164,11 +164,7 @@ export default function AvailabilityGrid({
 
   return (
     <Card className="w-full">
-      {/* 👇 4. Attach the ref. No more onMouseMove/onMouseLeave needed here. */}
-      <CardBody
-        ref={scrollContainerRef}
-        className="overflow-x-auto p-0"
-      >
+      <CardBody className="p-0">
         <div className="min-w-full">
           {/* ... Card header content ... */}
           <div className="border-b border-slate-200 px-6 py-4">
@@ -181,61 +177,79 @@ export default function AvailabilityGrid({
               </Typography>
             ) : null}
           </div>
-          <div className="px-6 pb-6">
-            <div
-              className="grid"
-              style={{ gridTemplateColumns: `90px repeat(${dateColumns}, minmax(90px, 1fr))` }}
-              onMouseUp={() => console.log('This will not be used, global handler takes over.')}
-            >
-              {/* ... Grid header ... */}
-              <div className="sticky left-0 z-10 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 border-r-2 border-slate-300">
-                Time
+          <div className="px-6 pb-6 pt-6">
+            <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-500 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden="true" />
+                <span>Unavailable</span>
               </div>
-              {dates.map((date) => (
-                <div
-                  key={date}
-                  className="border-l border-slate-200 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400"
-                  style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.75rem)' }}
-                >
-                  {formatDateHeader(date)}
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded"
+                  style={{ backgroundColor: brandColor }}
+                  aria-hidden="true"
+                />
+                <span>Available</span>
+              </div>
+            </div>
+            <div
+              ref={scrollContainerRef}
+              className="overflow-x-auto"
+            >
+              <div
+                className="grid"
+                style={{ gridTemplateColumns: `90px repeat(${dateColumns}, minmax(90px, 1fr))` }}
+              >
+              {/* ... Grid header ... */}
+                <div className="sticky left-0 z-10 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 border-r-2 border-slate-300">
+                  Time
                 </div>
-              ))}
-              {timeSlots.map((slot, slotIndex) => {
-                const shouldShowLabel = slotIndex % 2 === 0;
-                const hourLabel = shouldShowLabel ? formatSlotLabel(slot) : '';
+                {dates.map((date) => (
+                  <div
+                    key={date}
+                    className="border-l border-slate-200 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400"
+                    style={{ fontSize: 'clamp(0.65rem, 1.2vw, 0.75rem)' }}
+                  >
+                    {formatDateHeader(date)}
+                  </div>
+                ))}
+                {timeSlots.map((slot, slotIndex) => {
+                  const shouldShowLabel = slotIndex % 2 === 0;
+                  const hourLabel = shouldShowLabel ? formatSlotLabel(slot) : '';
 
-                return (
-                  <Fragment key={slot}>
-                    <div className="sticky left-0 z-10 bg-white/95 border-t border-slate-100 border-r-2 border-slate-300 px-3 py-1 text-xs font-medium text-slate-500 min-h-[32px] flex items-center">
-                      {hourLabel}
-                    </div>
-                    {dates.map((date) => {
-                      const isActive = availability?.[date]?.[slot];
-                      const isInDrag = isInDragSelection(date, slot);
-                      const displayValue = isDragging && isInDrag ? dragValue : isActive;
+                  return (
+                    <Fragment key={slot}>
+                      <div className="sticky left-0 z-10 bg-white/95 border-t border-slate-100 border-r-2 border-slate-300 px-3 py-1 text-xs font-medium text-slate-500 min-h-[32px] flex items-center">
+                        {hourLabel}
+                      </div>
+                      {dates.map((date) => {
+                        const isActive = availability?.[date]?.[slot];
+                        const isInDrag = isInDragSelection(date, slot);
+                        const displayValue = isDragging && isInDrag ? dragValue : isActive;
 
-                      return (
-                        <button
-                          key={`${date}-${slot}`}
-                          type="button"
-                          onMouseDown={(e) => handleMouseDown(date, slot, e)}
-                          onMouseMove={() => handleCellMouseMove(date, slot)}
-                          // onMouseUp is no longer needed here
-                          onClick={() =>
-                            !readonly && !isDragging && onToggle?.(date, slot, !isActive)
-                          }
-                          className={`border-t border-l border-slate-100 px-0 py-2 text-xs transition select-none ${
-                            displayValue
-                              ? `${primaryButtonFilledClasses} text-white`
-                              : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                          } ${readonly ? "cursor-default" : "cursor-pointer"}`}
-                        >
-                        </button>
-                      );
-                    })}
-                  </Fragment>
-                );
-              })}
+                        return (
+                          <button
+                            key={`${date}-${slot}`}
+                            type="button"
+                            onMouseDown={(e) => handleMouseDown(date, slot, e)}
+                            onMouseMove={() => handleCellMouseMove(date, slot)}
+                            // onMouseUp is no longer needed here
+                            onClick={() =>
+                              !readonly && !isDragging && onToggle?.(date, slot, !isActive)
+                            }
+                            className={`border-t border-l border-slate-100 px-0 py-2 text-xs transition select-none ${
+                              displayValue
+                                ? `${primaryButtonFilledClasses} text-white`
+                                : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                            } ${readonly ? "cursor-default" : "cursor-pointer"}`}
+                          >
+                          </button>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
