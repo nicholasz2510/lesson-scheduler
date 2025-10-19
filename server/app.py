@@ -1,6 +1,4 @@
 from flask import Flask
-from dotenv import load_dotenv
-
 from extensions import db
 from config import DevelopmentConfig
 from api.teachers import teachers_bp
@@ -9,7 +7,6 @@ from api.students import students_bp
 from api.availabilities import availabilities_bp
 from api.finalized_schedules import finalized_schedules_bp
 
-load_dotenv()
 
 def create_app(config_class=DevelopmentConfig):
     app = Flask(__name__)
