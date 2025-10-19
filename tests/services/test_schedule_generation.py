@@ -221,3 +221,47 @@ def test_generate_schedule_reports_unscheduled_students(monkeypatch, teacher_id)
     assert len(result["lessons"]) == 2
     assert result["scheduled_count"] == 2
     assert result["unscheduled_student_ids"] == [3]
+
+
+def test_generate_schedule_avoids_overlapping_lessons(monkeypatch, teacher_id):
+    day_start = datetime(2024, 1, 5, 9, 0)
+
+    students = [_make_student(1), _make_student(2), _make_student(3)]
+
+    availabilities = [
+        _make_teacher_availability(day_start + timedelta(minutes=offset), teacher_id)
+        for offset in (0, 30, 60)
+    ]
+    availabilities.extend(
+        [
+            _make_student_availability(day_start, 1),
+            _make_student_availability(day_start + timedelta(minutes=30), 2),
+            _make_student_availability(day_start + timedelta(minutes=60), 3),
+        ]
+    )
+
+    schedule = SimpleNamespace(
+        id=4,
+        teacher_id=teacher_id,
+        days=json.dumps([day_start.date().isoformat()]),
+        dates=[day_start.date().isoformat()],
+        students=students,
+        availabilities=availabilities,
+    )
+
+    _patch_schedule(monkeypatch, schedule)
+
+    result = schedule_service.generate_schedule(4, slot_minutes=60)
+
+    lessons = sorted(
+        (
+            datetime.fromisoformat(lesson["start_time"]),
+            datetime.fromisoformat(lesson["end_time"]),
+        )
+        for lesson in result["lessons"]
+    )
+
+    for (start, end), (next_start, _next_end) in zip(lessons, lessons[1:]):
+        assert end <= next_start
+
+    assert result["unscheduled_student_ids"] == [2]
