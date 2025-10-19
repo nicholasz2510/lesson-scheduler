@@ -436,8 +436,17 @@ def generate_schedule(
             person_node = student_nodes[student_id]
             required_slots = slots_required_by_student.get(student_id, 1)
             bonus_cost = 0
-            if required_slots > 1:
-                bonus_cost = -100_000 * (required_slots - 1)
+            if required_slots > 1 and extra_slots:
+                for extra_slot_id in extra_slots:
+                    if extra_slot_id < 0:
+                        continue
+                    extra_meta = slot_metadata.get(extra_slot_id)
+                    if not extra_meta:
+                        continue
+                    _extra_day, _extra_start, extra_position = extra_meta
+                    bonus_cost += gap_penalty * (extra_position * extra_position)
+                # Slightly prefer longer contiguous lessons when costs tie.
+                bonus_cost += -1 * len(extra_slots)
             edge_ref = solver.add_edge(
                 slot_node,
                 person_node,
@@ -462,24 +471,39 @@ def generate_schedule(
         marker = metadata[0] if metadata else None
         if marker != "slot_student":
             return
-        _slot_id, _student_id, extra_slots = metadata[1], metadata[2], metadata[3]
-        if not extra_slots:
+        slot_id, _student_id, extra_slots = metadata[1], metadata[2], metadata[3]
+        extra_slots = tuple(extra_slots or ())
+        base_slot_meta = slot_metadata.get(slot_id)
+        if base_slot_meta is None:
             return
-        for extra_slot_id in extra_slots:
-            if extra_slot_id in blocked_slots:
-                continue
-            blocked_slots.add(extra_slot_id)
-            if extra_slot_id in day_slot_edges:
-                day_u, day_index = day_slot_edges[extra_slot_id]
-                day_edge = solver.graph[day_u][day_index]
-                day_edge.cap = 0
-                reverse_edge = solver.graph[day_edge.to][day_edge.rev]
-                reverse_edge.cap = 0
-            for edge_u, edge_index in slot_edges_by_slot.get(extra_slot_id, []):
-                edge = solver.graph[edge_u][edge_index]
-                edge.cap = 0
-                reverse = solver.graph[edge.to][edge.rev]
-                reverse.cap = 0
+        day_key, _start_time, _position = base_slot_meta
+        if extra_slots:
+            for extra_slot_id in extra_slots:
+                if extra_slot_id in blocked_slots:
+                    continue
+                blocked_slots.add(extra_slot_id)
+                if extra_slot_id in day_slot_edges:
+                    day_u, day_index = day_slot_edges[extra_slot_id]
+                    day_edge = solver.graph[day_u][day_index]
+                    day_edge.cap = 0
+                    reverse_edge = solver.graph[day_edge.to][day_edge.rev]
+                    reverse_edge.cap = 0
+                for edge_u, edge_index in slot_edges_by_slot.get(extra_slot_id, []):
+                    edge = solver.graph[edge_u][edge_index]
+                    edge.cap = 0
+                    reverse = solver.graph[edge.to][edge.rev]
+                    reverse.cap = 0
+
+        block_size = 1 + len(extra_slots)
+        if block_size > 1:
+            state = day_states.get(day_key)
+            if state is not None:
+                state.assignments_made += (block_size - 1) * flow_amount
+                remaining = max(0, state.total_slots - state.assignments_made)
+                through_u, through_idx = state.through_edge
+                current_cap = solver.graph[through_u][through_idx].cap
+                if current_cap > remaining:
+                    solver.graph[through_u][through_idx].cap = remaining
 
     flow, total_cost = solver.successive_shortest_path(
         source,
