@@ -1,8 +1,6 @@
 import os
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv 
-from models import User
+from flask import Flask, jsonify
+from dotenv import load_dotenv
 from database import db
 from models import Teacher, Schedule, Student, Availability, FinalizedSchedule
 
@@ -11,7 +9,6 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
-    # --- Configuration ---
     db_user = os.environ.get('DB_USER')
     db_password = os.environ.get('DB_PASSWORD')
     db_host = os.environ.get('DB_HOST')
@@ -25,8 +22,27 @@ def create_app():
 
     @app.route('/')
     def index():
-        return "App is running!"
+        return "yuhhhh"
+
+    @app.route('/api/teachers')
+    def get_teachers():
+        try:
+            teachers = Teacher.query.all()
+            
+            teachers_list = [
+                {
+                    "id": teacher.id,
+                    "name": teacher.name,
+                    "email": teacher.email
+                }
+                for teacher in teachers
+            ]
+            
+            return jsonify(teachers_list)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     return app
 
 app = create_app()
+
