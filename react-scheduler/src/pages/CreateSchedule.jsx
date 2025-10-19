@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Button,
@@ -71,6 +71,7 @@ export default function CreateSchedule() {
   const [startTime, setStartTime] = useState(location.state?.startTime ?? "09:00");
   const [endTime, setEndTime] = useState(location.state?.endTime ?? "17:00");
   const [students, setStudents] = useState(location.state?.students ?? defaultStudents);
+  const [dragSelection, setDragSelection] = useState(null);
 
   // Generate upcoming date options starting from the closest Sunday
   const upcomingDateOptions = useMemo(() => {
@@ -98,6 +99,83 @@ export default function CreateSchedule() {
         : [...previous, date].sort()
     );
   };
+
+  const handleDatePointerDown = (event, index, date, isPast) => {
+    if (isPast) {
+      return;
+    }
+
+    if (event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    setDragSelection({
+      startIndex: index,
+      currentIndex: index,
+      shouldSelect: !selectedDates.includes(date),
+    });
+  };
+
+  const handleDatePointerEnter = (index, isPast) => {
+    if (isPast) {
+      return;
+    }
+
+    setDragSelection((previous) =>
+      previous
+        ? {
+            ...previous,
+            currentIndex: index,
+          }
+        : previous
+    );
+  };
+
+  useEffect(() => {
+    const finalizeDragSelection = () => {
+      setDragSelection((current) => {
+        if (!current) {
+          return null;
+        }
+
+        const { startIndex, currentIndex, shouldSelect } = current;
+        if (startIndex === currentIndex) {
+          return null;
+        }
+        const rangeStart = Math.min(startIndex, currentIndex);
+        const rangeEnd = Math.max(startIndex, currentIndex);
+
+        setSelectedDates((previous) => {
+          const selectedSet = new Set(previous);
+
+          for (let index = rangeStart; index <= rangeEnd; index += 1) {
+            const date = upcomingDateOptions[index];
+            if (!date) {
+              continue;
+            }
+
+            if (shouldSelect) {
+              selectedSet.add(date);
+            } else {
+              selectedSet.delete(date);
+            }
+          }
+
+          return Array.from(selectedSet).sort();
+        });
+
+        return null;
+      });
+    };
+
+    window.addEventListener("pointerup", finalizeDragSelection);
+
+    return () => {
+      window.removeEventListener("pointerup", finalizeDragSelection);
+    };
+  }, [setSelectedDates, upcomingDateOptions]);
 
 
   const handleAddStudent = () => {
@@ -172,9 +250,23 @@ export default function CreateSchedule() {
                 Select all dates for this schedule
               </Typography>
               <div className="max-w-2xl mx-auto">
+                <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-500 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden="true" />
+                    <span>Unavailable</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded"
+                      style={{ backgroundColor: brandColor }}
+                      aria-hidden="true"
+                    />
+                    <span>Available</span>
+                  </div>
+                </div>
               {/* Day of week headers */}
               <div className="grid grid-cols-7 gap-2 mb-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => {
                   return (
                     <div key={day} className="text-center text-xs font-semibold text-slate-500 py-2">
                       {day}
@@ -185,7 +277,21 @@ export default function CreateSchedule() {
               {/* Date grid */}
               <div className="grid grid-cols-7 gap-2">
                 {upcomingDateOptions.slice(0, 35).map((date, index) => {
-                  const isActive = selectedDates.includes(date);
+                  const isWithinDragRange = (() => {
+                    if (!dragSelection) {
+                      return false;
+                    }
+
+                    const { startIndex, currentIndex } = dragSelection;
+                    const rangeStart = Math.min(startIndex, currentIndex);
+                    const rangeEnd = Math.max(startIndex, currentIndex);
+
+                    return index >= rangeStart && index <= rangeEnd;
+                  })();
+
+                  const isActive = isWithinDragRange
+                    ? dragSelection.shouldSelect
+                    : selectedDates.includes(date);
                   const isPast = (() => {
                     const [year, month, day] = date.split('-').map(Number);
                     const today = new Date();
@@ -216,6 +322,12 @@ export default function CreateSchedule() {
                           : primaryButtonOutlinedClasses
                       }`}
                       onClick={() => !isPast && handleToggleDate(date)}
+                      onPointerDown={(event) =>
+                        handleDatePointerDown(event, index, date, isPast)
+                      }
+                      onPointerEnter={() =>
+                        dragSelection && handleDatePointerEnter(index, isPast)
+                      }
                     >
                        <div className="flex flex-col items-center">
                          <span className="text-xs font-medium">
