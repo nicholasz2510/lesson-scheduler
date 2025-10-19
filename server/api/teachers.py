@@ -1,8 +1,10 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from models.models import Teacher
 from extensions import db, bcrypt
 from services import teacher_service
 from schemas.teacher_schema import teachers_schema, teacher_schema
+from datetime import datetime, timedelta
+import jwt
 
 teachers_bp = Blueprint('teachers_bp', __name__, url_prefix='/api/teachers')
 
