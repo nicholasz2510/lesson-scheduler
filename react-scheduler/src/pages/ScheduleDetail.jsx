@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import {
   Button,
@@ -42,6 +42,8 @@ import {
 } from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
 import { TrashIcon } from "@heroicons/react/24/outline";
+
+const BASE_SLOT_MINUTES = 30;
 
 const formatRangeLabel = (startIso, endIso) => {
   const start = parseISO(startIso);
@@ -193,35 +195,79 @@ export default function ScheduleDetail() {
     return `${getAppOrigin()}/s/${slug}`;
   }, [schedule]);
 
+  const availabilityAutoSaveTimeout = useRef(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (availabilityAutoSaveTimeout.current) {
+        clearTimeout(availabilityAutoSaveTimeout.current);
+      }
+    };
+  }, []);
+
+  const saveAvailability = useCallback(
+    async (availabilityMap) => {
+      if (!schedule || !token || !isMountedRef.current) {
+        return;
+      }
+
+      if (isMountedRef.current) {
+        setSavingAvailability(true);
+        setError(null);
+      }
+
+      try {
+        const payload = {
+          schedule_id: schedule.id,
+          start_times: availabilityMapToStartTimes(availabilityMap),
+        };
+        await syncTeacherAvailability(token, payload);
+      } catch (err) {
+        console.error("Failed to save availability", err);
+        if (isMountedRef.current) {
+          setError(err.message);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setSavingAvailability(false);
+        }
+      }
+    },
+    [schedule, token]
+  );
+
+  const scheduleAvailabilitySave = useCallback(
+    (availabilityMap) => {
+      if (!schedule || !token) {
+        return;
+      }
+
+      if (availabilityAutoSaveTimeout.current) {
+        clearTimeout(availabilityAutoSaveTimeout.current);
+      }
+
+      availabilityAutoSaveTimeout.current = setTimeout(() => {
+        saveAvailability(availabilityMap);
+      }, 500);
+    },
+    [saveAvailability, schedule, token]
+  );
+
   const handleToggleSlot = (date, slot, value) => {
-    setAvailability((previous) => ({
-      ...previous,
-      [date]: {
-        ...(previous?.[date] ?? {}),
-        [slot]: value !== undefined ? value : !previous?.[date]?.[slot],
-      },
-    }));
-  };
-
-  const handleSaveAvailability = async () => {
-    if (!schedule) {
-      return;
-    }
-
-    setSavingAvailability(true);
-    setError(null);
-    try {
-      const payload = {
-        schedule_id: schedule.id,
-        start_times: availabilityMapToStartTimes(availability),
+    setAvailability((previous) => {
+      const nextAvailability = {
+        ...previous,
+        [date]: {
+          ...(previous?.[date] ?? {}),
+          [slot]: value !== undefined ? value : !previous?.[date]?.[slot],
+        },
       };
-      await syncTeacherAvailability(token, payload);
-    } catch (err) {
-      console.error("Failed to save availability", err);
-      setError(err.message);
-    } finally {
-      setSavingAvailability(false);
-    }
+
+      scheduleAvailabilitySave(nextAvailability);
+      return nextAvailability;
+    });
   };
 
   const handleRunScheduling = async () => {
@@ -239,6 +285,8 @@ export default function ScheduleDetail() {
         if (length) {
           payload.slot_minutes = length;
         }
+      } else if (lessonLengths.size > 1) {
+        payload.slot_minutes = BASE_SLOT_MINUTES;
       }
 
       const result = await generateScheduleRequest(token, schedule.id, payload);
@@ -592,15 +640,9 @@ export default function ScheduleDetail() {
             subtitle="Toggle the times you are willing to teach."
           />
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <Button
-              variant="outlined"
-              color="purple"
-              className={primaryButtonOutlinedClasses}
-              onClick={handleSaveAvailability}
-              disabled={savingAvailability}
-            >
-              {savingAvailability ? "Saving…" : "Save availability"}
-            </Button>
+            <Typography variant="small" className="text-slate-500">
+              {savingAvailability ? "Saving changes…" : "Changes are saved automatically."}
+            </Typography>
           </div>
           <Card>
             <CardBody className="space-y-4">

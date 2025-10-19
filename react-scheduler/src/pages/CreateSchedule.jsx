@@ -77,6 +77,7 @@ export default function CreateSchedule() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [studentError, setStudentError] = useState(null);
+  const [timeRangeError, setTimeRangeError] = useState(null);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
   const [createdSchedule, setCreatedSchedule] = useState(null);
   const [shareSlug, setShareSlug] = useState(() => slugify(location.state?.title ?? ""));
@@ -250,6 +251,39 @@ export default function CreateSchedule() {
       setShareLinkCopied(true);
       setTimeout(() => setShareLinkCopied(false), 1500);
     }
+  };
+
+  const parseTimeToMinutes = (value) => {
+    if (!value) {
+      return NaN;
+    }
+
+    const [hoursString = "", minutesString = ""] = value.split(":");
+    const hours = Number.parseInt(hoursString, 10);
+    const minutes = Number.parseInt(minutesString, 10);
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return NaN;
+    }
+
+    return hours * 60 + minutes;
+  };
+
+  const validateTimeRange = () => {
+    const startMinutes = parseTimeToMinutes(startTime);
+    const endMinutes = parseTimeToMinutes(endTime);
+
+    if (
+      Number.isNaN(startMinutes) ||
+      Number.isNaN(endMinutes) ||
+      endMinutes - startMinutes < 30
+    ) {
+      setTimeRangeError("Start time must be at least 30 minutes before end time.");
+      return false;
+    }
+
+    setTimeRangeError(null);
+    return true;
   };
 
   const handleCreateSchedule = async () => {
@@ -459,7 +493,10 @@ export default function CreateSchedule() {
                     size="lg"
                     color="purple"
                     value={startTime}
-                    onChange={(event) => setStartTime(event.target.value)}
+                    onChange={(event) => {
+                      setStartTime(event.target.value);
+                      setTimeRangeError(null);
+                    }}
                     className={primaryInputFocusClasses}
                     crossOrigin=""
                   />
@@ -473,12 +510,20 @@ export default function CreateSchedule() {
                     size="lg"
                     color="purple"
                     value={endTime}
-                    onChange={(event) => setEndTime(event.target.value)}
+                    onChange={(event) => {
+                      setEndTime(event.target.value);
+                      setTimeRangeError(null);
+                    }}
                     className={primaryInputFocusClasses}
                     crossOrigin=""
                   />
                 </div>
               </div>
+              {timeRangeError ? (
+                <Typography variant="small" className="text-red-600">
+                  {timeRangeError}
+                </Typography>
+              ) : null}
               <Typography variant="small" className="text-slate-400">
                 Students will be able to mark their availability within this time range.
               </Typography>
