@@ -43,6 +43,8 @@ import {
 import { useAuth } from "../context/AuthContext.jsx";
 import { TrashIcon } from "@heroicons/react/24/outline";
 
+const BASE_SLOT_MINUTES = 30;
+
 const formatRangeLabel = (startIso, endIso) => {
   const start = parseISO(startIso);
   const end = parseISO(endIso);
@@ -239,6 +241,8 @@ export default function ScheduleDetail() {
         if (length) {
           payload.slot_minutes = length;
         }
+      } else if (lessonLengths.size > 1) {
+        payload.slot_minutes = BASE_SLOT_MINUTES;
       }
 
       const result = await generateScheduleRequest(token, schedule.id, payload);
