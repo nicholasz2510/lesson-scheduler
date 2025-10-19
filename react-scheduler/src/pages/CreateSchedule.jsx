@@ -9,7 +9,6 @@ import {
   Input,
   List,
   ListItem,
-  Tooltip,
   Typography,
 } from "@material-tailwind/react";
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -18,13 +17,9 @@ import { createSchedule as createScheduleRequest } from "../api";
 import { useAuth } from "../context/AuthContext.jsx";
 import { formatScheduleDates } from "../utils/schedule";
 import { addDays, format } from "date-fns";
-import { copyToClipboard, getAppOrigin } from "../utils/environment";
 import useDocumentTitle from "../utils/useDocumentTitle";
 import {
   brandColor,
-  brandColorDeep,
-  brandSurface,
-  brandSurfaceLight,
   primaryButtonFilledClasses,
   primaryButtonOutlinedClasses,
   primaryButtonTextClasses,
@@ -45,8 +40,8 @@ const steps = [
     helper: "Add students and lesson lengths. You can always add more later.",
   },
   {
-    title: "Schedule created!",
-    helper: "Share the link with students to collect their availability.",
+    title: "Summary",
+    helper: "Review the details before creating the schedule.",
   },
 ];
 
@@ -77,7 +72,6 @@ export default function CreateSchedule() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [studentError, setStudentError] = useState(null);
-  const [shareLinkCopied, setShareLinkCopied] = useState(false);
 
   // Generate upcoming date options starting from the closest Sunday
   const upcomingDateOptions = useMemo(() => {
@@ -236,14 +230,6 @@ export default function CreateSchedule() {
 
     setStudentError(null);
     return true;
-  };
-
-  const handleCopyShareLink = async () => {
-    const success = await copyToClipboard(`${getAppOrigin()}/s/${shareSlug}`);
-    if (success) {
-      setShareLinkCopied(true);
-      setTimeout(() => setShareLinkCopied(false), 1500);
-    }
   };
 
   const goNext = () => {
@@ -538,24 +524,13 @@ export default function CreateSchedule() {
       case 3:
         return (
           <div className="space-y-6">
-            <div
-              className="rounded-2xl p-6"
-              style={{
-                background: `linear-gradient(135deg, ${brandSurface} 0%, ${brandSurfaceLight} 100%)`,
-              }}
-            >
-              <Typography variant="small" style={{ color: brandColor }}>
-                Share link preview
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-left">
+              <Typography variant="h6" className="font-display text-slate-800">
+                Review and create
               </Typography>
-              <Typography
-                variant="h6"
-                className="font-display"
-                style={{ color: brandColorDeep }}
-              >
-                {`${getAppOrigin()}/s/${shareSlug}`}
-              </Typography>
-              <Typography variant="small" className="mt-2" style={{ color: brandColor }}>
-                Copy and send this link to students so they can submit availability.
+              <Typography variant="small" className="mt-2 text-slate-500">
+                Double-check these details. You can share the schedule link with students after it’s
+                created.
               </Typography>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -644,29 +619,17 @@ export default function CreateSchedule() {
                   className={primaryButtonFilledClasses}
                   onClick={goNext}
                 >
-                  {step === 2 ? "Create schedule" : "Continue"}
+                  Continue
                 </Button>
               ) : (
-                <div className="flex items-center gap-3">
-                  <Tooltip content="Copied!" open={shareLinkCopied} placement="top">
-                    <Button
-                      color="purple"
-                      variant="outlined"
-                      className={primaryButtonOutlinedClasses}
-                      onClick={handleCopyShareLink}
-                    >
-                      Copy link
-                    </Button>
-                  </Tooltip>
-                  <Button
-                    color="purple"
-                    className={primaryButtonFilledClasses}
-                    onClick={handleFinish}
-                    disabled={isSaving || selectedDates.length === 0}
-                  >
-                    {isSaving ? "Saving…" : "View schedule"}
-                  </Button>
-                </div>
+                <Button
+                  color="purple"
+                  className={primaryButtonFilledClasses}
+                  onClick={handleFinish}
+                  disabled={isSaving || selectedDates.length === 0}
+                >
+                  {isSaving ? "Creating…" : "Create schedule"}
+                </Button>
               )}
             </div>
           </CardBody>
