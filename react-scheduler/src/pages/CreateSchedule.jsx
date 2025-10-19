@@ -250,6 +250,20 @@ export default function CreateSchedule() {
                 Select all dates for this schedule
               </Typography>
               <div className="max-w-2xl mx-auto">
+                <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-500 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden="true" />
+                    <span>Unavailable</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block h-3 w-3 rounded"
+                      style={{ backgroundColor: brandColor }}
+                      aria-hidden="true"
+                    />
+                    <span>Available</span>
+                  </div>
+                </div>
               {/* Day of week headers */}
               <div className="grid grid-cols-7 gap-2 mb-2">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => {

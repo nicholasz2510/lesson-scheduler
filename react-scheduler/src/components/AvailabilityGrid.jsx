@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { Fragment, useState, useRef, useEffect } from "react"; // 👈 1. Import useEffect
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { formatSlotLabel, timeSlots } from "../data/mockData";
-import { primaryButtonFilledClasses } from "../utils/theme";
+import { brandColor, primaryButtonFilledClasses } from "../utils/theme";
 
 // (formatDateHeader function remains the same)
 const formatDateHeader = (dateString) => {
@@ -182,6 +182,20 @@ export default function AvailabilityGrid({
             ) : null}
           </div>
           <div className="px-6 pb-6">
+            <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-500 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white" aria-hidden="true" />
+                <span>Unavailable</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block h-3 w-3 rounded"
+                  style={{ backgroundColor: brandColor }}
+                  aria-hidden="true"
+                />
+                <span>Available</span>
+              </div>
+            </div>
             <div
               className="grid"
               style={{ gridTemplateColumns: `90px repeat(${dateColumns}, minmax(90px, 1fr))` }}
