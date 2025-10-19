@@ -1,4 +1,8 @@
+import json
+from datetime import datetime
+
 from extensions import db
+
 
 # Teacher model
 class Teacher(db.Model):
@@ -13,21 +17,52 @@ class Teacher(db.Model):
     def __repr__(self):
         return f'<Teacher {self.name}>'
 
+
 # Schedule model
 class Schedule(db.Model):
     __tablename__ = 'schedule'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
-    days = db.Column(db.String(400), nullable=False)
+    slug = db.Column(db.String(160), unique=True, nullable=False)
+    days = db.Column(db.Text, nullable=False)
+    start_time = db.Column(db.String(5), nullable=True)
+    end_time = db.Column(db.String(5), nullable=True)
+    is_finalized = db.Column(db.Boolean, default=False, nullable=False)
+    finalized_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now())
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        server_default=db.func.now(),
+        onupdate=db.func.now(),
+    )
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
 
     teacher = db.relationship('Teacher', back_populates='schedules')
     students = db.relationship('Student', back_populates='schedule', cascade="all, delete-orphan")
     availabilities = db.relationship('Availability', back_populates='schedule', cascade="all, delete-orphan")
     finalized_entries = db.relationship('FinalizedSchedule', back_populates='schedule', cascade="all, delete-orphan")
-    
+
     def __repr__(self):
-        return f'<Schedule {self.title}>'
+        return f'<Schedule {self.title} ({self.slug})>'
+
+    @property
+    def dates(self):
+        if not self.days:
+            return []
+        try:
+            return json.loads(self.days)
+        except (TypeError, ValueError):
+            return [value for value in self.days.split(',') if value]
+
+    @dates.setter
+    def dates(self, value):
+        if value is None:
+            self.days = '[]'
+        elif isinstance(value, str):
+            self.days = value
+        else:
+            self.days = json.dumps(value)
+
 
 # Student model
 class Student(db.Model):
@@ -42,6 +77,7 @@ class Student(db.Model):
     def __repr__(self):
         return f'<Student {self.name}>'
 
+
 # Availability model
 class Availability(db.Model):
     __tablename__ = 'availability'
@@ -55,6 +91,7 @@ class Availability(db.Model):
     student = db.relationship('Student')
     teacher = db.relationship('Teacher')
 
+
 # Finalized Schedule model
 class FinalizedSchedule(db.Model):
     __tablename__ = 'finalized_schedule'
@@ -65,7 +102,17 @@ class FinalizedSchedule(db.Model):
     schedule_id = db.Column(db.Integer, db.ForeignKey('schedule.id'), nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
-    
+
     schedule = db.relationship('Schedule', back_populates='finalized_entries')
     student = db.relationship('Student')
     teacher = db.relationship('Teacher')
+
+
+class RevokedToken(db.Model):
+    __tablename__ = 'revoked_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(255), unique=True, nullable=False)
+    revoked_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f'<RevokedToken {self.jti}>'

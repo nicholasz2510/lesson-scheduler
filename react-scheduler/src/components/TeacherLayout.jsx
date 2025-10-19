@@ -2,8 +2,8 @@ import PropTypes from "prop-types";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Button, IconButton, Typography } from "@material-tailwind/react";
 import { MenuIcon } from "./icons";
-import { teacherProfile } from "../data/mockData";
 import logo from "../assets/cropped_logo.png";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const navItems = [
   { label: "Dashboard", to: "/teacher/dashboard" },
@@ -12,10 +12,10 @@ const navItems = [
 
 export default function TeacherLayout({ pageTitle, actions, children }) {
   const navigate = useNavigate();
+  const { teacher, logout } = useAuth();
 
   const handleSignOut = () => {
-    // TODO: replace with server request to sign out.
-    navigate("/");
+    logout().finally(() => navigate("/"));
   };
 
   return (
@@ -47,10 +47,10 @@ export default function TeacherLayout({ pageTitle, actions, children }) {
           <div className="border-t border-slate-100 px-6 py-4">
             <div>
               <Typography variant="small" className="font-semibold text-slate-700">
-                {teacherProfile.name}
+                {teacher?.name ?? "Your account"}
               </Typography>
               <Typography variant="small" className="text-slate-500">
-                {teacherProfile.email}
+                {teacher?.email ?? ""}
               </Typography>
             </div>
             <Button

@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { Fragment, useState, useRef, useEffect } from "react"; // 👈 1. Import useEffect
 import { Card, CardBody, Typography } from "@material-tailwind/react";
-import { formatSlotLabel, timeSlots } from "../data/mockData";
+import { formatSlotLabel } from "../utils/schedule";
 import { brandColor, primaryButtonFilledClasses } from "../utils/theme";
 
 // (formatDateHeader function remains the same)
@@ -17,6 +17,7 @@ const formatDateHeader = (dateString) => {
 
 export default function AvailabilityGrid({
   dates,
+  timeSlots = [],
   availability,
   onToggle,
   readonly,
@@ -258,20 +259,21 @@ export default function AvailabilityGrid({
   );
 }
 
-// (PropTypes and defaultProps remain the same)
 AvailabilityGrid.propTypes = {
-    dates: PropTypes.arrayOf(PropTypes.string).isRequired,
-    availability: PropTypes.object,
-    onToggle: PropTypes.func,
-    readonly: PropTypes.bool,
-    title: PropTypes.string,
-    subtitle: PropTypes.string,
+  dates: PropTypes.arrayOf(PropTypes.string).isRequired,
+  timeSlots: PropTypes.arrayOf(PropTypes.string),
+  availability: PropTypes.object,
+  onToggle: PropTypes.func,
+  readonly: PropTypes.bool,
+  title: PropTypes.string,
+  subtitle: PropTypes.string,
 };
 
 AvailabilityGrid.defaultProps = {
-    availability: {},
-    onToggle: undefined,
-    readonly: false,
-    title: "",
-    subtitle: "",
+  timeSlots: [],
+  availability: {},
+  onToggle: undefined,
+  readonly: false,
+  title: "",
+  subtitle: "",
 };
