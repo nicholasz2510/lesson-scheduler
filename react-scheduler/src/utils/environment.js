@@ -1,7 +1,15 @@
-export const getAppOrigin = () =>
-  typeof window !== "undefined" && window.location?.origin
-    ? window.location.origin
-    : "http://localhost:5173";
+export const getAppOrigin = () => {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+
+  const configuredOrigin = import.meta.env?.VITE_APP_ORIGIN?.trim();
+  if (configuredOrigin) {
+    return configuredOrigin.replace(/\/$/, "");
+  }
+
+  return "";
+};
 
 export const copyToClipboard = async (value) => {
   if (typeof navigator !== "undefined" && navigator.clipboard) {

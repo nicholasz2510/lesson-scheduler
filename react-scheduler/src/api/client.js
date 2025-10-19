@@ -1,6 +1,12 @@
 const getBaseUrl = () => {
-  const raw = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-  return raw.replace(/\/$/, "");
+  const raw = import.meta.env?.VITE_API_BASE_URL ?? "";
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed.replace(/\/$/, "");
 };
 
 export const apiRequest = async (path, { method = "GET", data, token, headers, ...options } = {}) => {
