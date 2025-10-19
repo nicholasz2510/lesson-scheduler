@@ -207,7 +207,7 @@ export default function StudentScheduler() {
             <Typography variant="small" className="text-slate-500">
               {availableSlots > 0
                 ? "Select the times that work for you."
-                : "Your teacher hasn’t opened any times yet."}
+                : "Your teacher hasn’t chosen their times yet."}
             </Typography>
           </div>
           {error ? (
@@ -220,7 +220,6 @@ export default function StudentScheduler() {
             timeSlots={timeSlots}
             availability={availability}
             onToggle={handleToggleSlot}
-            readonly={availableSlots === 0}
             title="When can you attend?"
             subtitle="Only times your teacher is available can be selected."
           />
@@ -237,7 +236,7 @@ export default function StudentScheduler() {
               color="purple"
               className={primaryButtonFilledClasses}
               onClick={handleSubmit}
-              disabled={isSaving || availableSlots === 0}
+              disabled={isSaving}
             >
               {isSaving ? "Submitting…" : hasSubmitted ? "Update availability" : "Submit availability"}
             </Button>
