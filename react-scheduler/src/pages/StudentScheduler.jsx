@@ -23,16 +23,6 @@ import {
 } from "../utils/theme";
 import { fetchPublicSchedule, syncStudentAvailability } from "../api";
 
-const buildTeacherSlotSet = (availabilities) => {
-  const set = new Set();
-  (availabilities ?? []).forEach((entry) => {
-    if (entry.teacher_id) {
-      set.add(entry.start_time.slice(0, 16));
-    }
-  });
-  return set;
-};
-
 export default function StudentScheduler() {
   const { scheduleId, studentId } = useParams();
   const navigate = useNavigate();
@@ -40,7 +30,6 @@ export default function StudentScheduler() {
   const [schedule, setSchedule] = useState(null);
   const [timeSlots, setTimeSlots] = useState([]);
   const [availability, setAvailability] = useState({});
-  const [teacherSlotSet, setTeacherSlotSet] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,7 +60,6 @@ export default function StudentScheduler() {
           buildAvailabilityMapFromEntries(response.dates ?? [], slots, studentEntries)
         );
         setHasSubmitted(studentEntries.length > 0);
-        setTeacherSlotSet(buildTeacherSlotSet(response.availabilities));
       } catch (err) {
         console.error("Failed to load schedule", err);
         if (isMounted) {
@@ -102,16 +90,12 @@ export default function StudentScheduler() {
     student ? `${student.name} – Share availability` : "Share availability"
   );
 
-  const handleToggleSlot = (date, slot) => {
-    if (!teacherSlotSet.has(`${date}T${slot}`)) {
-      return;
-    }
-
+  const handleToggleSlot = (date, slot, value) => {
     setAvailability((previous) => ({
       ...previous,
       [date]: {
         ...(previous?.[date] ?? {}),
-        [slot]: !previous?.[date]?.[slot],
+        [slot]: value !== undefined ? value : !previous?.[date]?.[slot],
       },
     }));
   };
@@ -179,8 +163,6 @@ export default function StudentScheduler() {
     );
   }
 
-  const availableSlots = teacherSlotSet.size;
-
   return (
     <div
       className="min-h-screen px-4 py-16"
@@ -205,9 +187,7 @@ export default function StudentScheduler() {
               {formatScheduleDates(schedule.dates)}
             </Typography>
             <Typography variant="small" className="text-slate-500">
-              {availableSlots > 0
-                ? "Select the times that work for you."
-                : "Your teacher hasn’t chosen their times yet."}
+              Select the times that work for you.
             </Typography>
           </div>
           {error ? (
@@ -221,7 +201,7 @@ export default function StudentScheduler() {
             availability={availability}
             onToggle={handleToggleSlot}
             title="When can you attend?"
-            subtitle="Only times your teacher is available can be selected."
+            subtitle="Choose any times on the grid that work for you."
           />
           <div className="flex flex-wrap items-center justify-end gap-3">
             <Button
