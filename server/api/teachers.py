@@ -1,17 +1,22 @@
-from flask import Blueprint, jsonify, request, current_app
-from models.models import Teacher
-from extensions import db, bcrypt
-from services import teacher_service
-from schemas.teacher_schema import teachers_schema, teacher_schema
 from datetime import datetime, timedelta
+from uuid import uuid4
+
+from flask import Blueprint, jsonify, request, current_app, g
 import jwt
 
+from extensions import db, bcrypt
+from models.models import Teacher
+from schemas.teacher_schema import teacher_schema, teachers_schema
+from services import teacher_service
+from .auth_decorator import token_required
+
 teachers_bp = Blueprint('teachers_bp', __name__, url_prefix='/api/teachers')
+
 
 @teachers_bp.route('/register', methods=['POST'])
 def register_teacher():
     data = request.get_json()
-    
+
     if not data or not all(k in data for k in ('name', 'email', 'password')):
         return jsonify({"error": "Missing name, email, or password"}), 400
 
@@ -38,13 +43,14 @@ def register_teacher():
         db.session.rollback()
         return jsonify({"error": "Failed to create account", "details": str(e)}), 500
 
+
 @teachers_bp.route('/login', methods=['POST'])
 def login_teacher():
     data = request.get_json()
 
     if not data or not all(k in data for k in ('email', 'password')):
         return jsonify({"error": "Missing email or password"}), 400
-    
+
     email = data.get('email')
     password = data.get('password')
 
@@ -54,9 +60,10 @@ def login_teacher():
         return jsonify({"error": "Invalid credentials"}), 401
 
     payload = {
-        'iat': datetime.utcnow(), 
+        'iat': datetime.utcnow(),
         'exp': datetime.utcnow() + timedelta(days=1),
-        'sub': teacher.id
+        'teacher_id': teacher.id,
+        'jti': str(uuid4())
     }
 
     token = jwt.encode(
@@ -65,7 +72,27 @@ def login_teacher():
         algorithm='HS256'
     )
 
-    return jsonify({"token": token}), 200
+    return jsonify({"token": token, "teacher": teacher_schema.dump(teacher)}), 200
+
+
+@teachers_bp.route('/logout', methods=['POST'])
+@token_required
+def logout_teacher(current_teacher_id):
+    try:
+        teacher_service.revoke_token(g.token_jti)
+        return jsonify({"message": "Logged out successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@teachers_bp.route('/me', methods=['GET'])
+@token_required
+def get_current_teacher(current_teacher_id):
+    teacher = teacher_service.get_teacher_by_id(current_teacher_id)
+    if teacher is None:
+        return jsonify({"error": "Teacher not found"}), 404
+    return jsonify(teacher_schema.dump(teacher)), 200
+
 
 @teachers_bp.route('/', methods=['GET'])
 def get_teachers():
