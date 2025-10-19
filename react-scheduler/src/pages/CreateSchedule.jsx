@@ -78,6 +78,8 @@ export default function CreateSchedule() {
   const [error, setError] = useState(null);
   const [studentError, setStudentError] = useState(null);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
+  const [createdSchedule, setCreatedSchedule] = useState(null);
+  const [shareSlug, setShareSlug] = useState(() => slugify(location.state?.title ?? ""));
 
   // Generate upcoming date options starting from the closest Sunday
   const upcomingDateOptions = useMemo(() => {
@@ -96,7 +98,11 @@ export default function CreateSchedule() {
 
   useDocumentTitle("Create schedule");
 
-  const shareSlug = useMemo(() => slugify(title), [title]);
+  useEffect(() => {
+    if (!createdSchedule) {
+      setShareSlug(slugify(title));
+    }
+  }, [createdSchedule, title]);
 
   const handleToggleDate = (date) => {
     setSelectedDates((previous) =>
@@ -246,22 +252,7 @@ export default function CreateSchedule() {
     }
   };
 
-  const goNext = () => {
-    if (step === 2 && !validateStudents()) {
-      return;
-    }
-    if (step < steps.length - 1) {
-      setStep((value) => value + 1);
-    }
-  };
-
-  const goBack = () => {
-    if (step > 0) {
-      setStep((value) => value - 1);
-    }
-  };
-
-  const handleFinish = async () => {
+  const handleCreateSchedule = async () => {
     if (!token) {
       return;
     }
@@ -288,13 +279,44 @@ export default function CreateSchedule() {
 
     try {
       const schedule = await createScheduleRequest(token, payload);
-      navigate(`/teacher/schedules/${schedule.id}`, { replace: true });
+      setCreatedSchedule(schedule);
+      setShareSlug(schedule.slug);
+      setStep(3);
     } catch (err) {
       console.error("Failed to create schedule", err);
       setError(err.message);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const goNext = async () => {
+    if (step === 2) {
+      if (createdSchedule) {
+        setStep(3);
+        return;
+      }
+      await handleCreateSchedule();
+      return;
+    }
+
+    if (step < steps.length - 1) {
+      setStep((value) => value + 1);
+    }
+  };
+
+  const goBack = () => {
+    if (step > 0) {
+      setStep((value) => value - 1);
+    }
+  };
+
+  const handleFinish = () => {
+    if (!createdSchedule) {
+      return;
+    }
+
+    navigate(`/teacher/schedules/${createdSchedule.id}`, { replace: true });
   };
 
   const renderStepContent = () => {
@@ -642,9 +664,12 @@ export default function CreateSchedule() {
                 <Button
                   color="purple"
                   className={primaryButtonFilledClasses}
-                  onClick={goNext}
+                  onClick={() => goNext()}
+                  disabled={
+                    isSaving || (step === 2 && selectedDates.length === 0)
+                  }
                 >
-                  {step === 2 ? "Create schedule" : "Continue"}
+                  {step === 2 ? (isSaving ? "Creating…" : "Create schedule") : "Continue"}
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
@@ -654,6 +679,7 @@ export default function CreateSchedule() {
                       variant="outlined"
                       className={primaryButtonOutlinedClasses}
                       onClick={handleCopyShareLink}
+                      disabled={!createdSchedule}
                     >
                       Copy link
                     </Button>
@@ -662,9 +688,9 @@ export default function CreateSchedule() {
                     color="purple"
                     className={primaryButtonFilledClasses}
                     onClick={handleFinish}
-                    disabled={isSaving || selectedDates.length === 0}
+                    disabled={!createdSchedule}
                   >
-                    {isSaving ? "Saving…" : "View schedule"}
+                    View schedule
                   </Button>
                 </div>
               )}
