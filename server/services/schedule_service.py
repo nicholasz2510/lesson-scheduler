@@ -130,6 +130,7 @@ class _MinCostFlow:
 
             days_seen: Dict[date, bool] = {}
             open_edges: Dict[date, bool] = {}
+            slots_used_in_path: Dict[date, int] = defaultdict(int)
 
             for u, edge_index in path:
                 edge = self._graph[u][edge_index]
@@ -145,12 +146,19 @@ class _MinCostFlow:
                     elif marker == "open":
                         day_key = edge.metadata[1]
                         open_edges[day_key] = True
-                    elif marker == "slot_student" and on_assign is not None:
-                        on_assign(edge.metadata, add_flow)
+                    elif marker == "slot_student":
+                        day_key = edge.metadata[4]
+                        block_size = edge.metadata[5]
+                        slots_used_in_path[day_key] += block_size * add_flow
+                        if on_assign is not None:
+                            on_assign(edge.metadata, add_flow)
 
             for day_key in days_seen.keys():
                 state = day_states[day_key]
-                state.assignments_made += add_flow
+                slots_consumed = slots_used_in_path.get(day_key, 0)
+                if slots_consumed <= 0:
+                    slots_consumed = add_flow
+                state.assignments_made += slots_consumed
                 remaining = max(0, state.total_slots - state.assignments_made)
                 if not state.opened and day_key in open_edges:
                     state.opened = True
@@ -370,7 +378,8 @@ def generate_schedule(
 
     source = 0
     day_nodes: Dict[date, int] = {}
-    slot_nodes: Dict[int, int] = {}
+    slot_in_nodes: Dict[int, int] = {}
+    slot_out_nodes: Dict[int, int] = {}
     student_nodes: Dict[int, int] = {}
 
     node_cursor = 1
@@ -379,18 +388,31 @@ def generate_schedule(
         node_cursor += 1
 
     for slot_id in slot_metadata:
-        slot_nodes[slot_id] = node_cursor
+        slot_in_nodes[slot_id] = node_cursor
+        node_cursor += 1
+        slot_out_nodes[slot_id] = node_cursor
         node_cursor += 1
 
     for student_id in student_by_id:
         student_nodes[student_id] = node_cursor
         node_cursor += 1
 
+    candidate_specs: List[Tuple[int, int, Tuple[int, ...]]] = []
+    candidate_progress_nodes: Dict[Tuple[int, int, Tuple[int, ...]], List[int]] = {}
+
+    for slot_id in sorted(slot_students.keys()):
+        for student_id, extra_slots in slot_students[slot_id]:
+            extras_tuple = tuple(extra_slots or ())
+            block_slots = (slot_id,) + extras_tuple
+            progress_nodes = [node_cursor + idx for idx in range(len(block_slots) + 1)]
+            candidate_progress_nodes[(slot_id, student_id, extras_tuple)] = progress_nodes
+            node_cursor += len(progress_nodes)
+            candidate_specs.append((slot_id, student_id, extras_tuple))
+
     sink = node_cursor
     solver = _MinCostFlow(sink + 1)
 
     day_states: Dict[date, _DayState] = {}
-    day_slot_edges: Dict[int, Tuple[int, int]] = {}
 
     for day_key, day_node in day_nodes.items():
         open_edge = solver.add_edge(
@@ -413,151 +435,84 @@ def generate_schedule(
             through_edge=through_edge,
         )
 
-    slot_edges_by_slot: Dict[int, List[Tuple[int, int]]] = defaultdict(list)
-    slot_to_student_edges: List[Tuple[int, int, int, int, Tuple[int, ...]]] = []
-
-    for slot_id, (day_key, start_time, position) in slot_metadata.items():
-        candidates = slot_students.get(slot_id, [])
-        if not candidates:
-            continue
-        day_node = day_nodes[day_key]
-        slot_node = slot_nodes[slot_id]
+    for slot_id, (day_key, _start_time, position) in slot_metadata.items():
+        slot_in = slot_in_nodes[slot_id]
+        slot_out = slot_out_nodes[slot_id]
         gap_cost = gap_penalty * position * position
-        day_edge = solver.add_edge(
-            day_node,
-            slot_node,
+        solver.add_edge(
+            slot_in,
+            slot_out,
             1,
             gap_cost,
+            metadata=("slot_capacity", day_key, slot_id),
+        )
+
+    slot_to_student_edges: List[Tuple[int, int, int, int, Tuple[int, ...]]] = []
+
+    for slot_id, student_id, extras_tuple in candidate_specs:
+        base_meta = slot_metadata.get(slot_id)
+        if not base_meta:
+            continue
+        day_key, _start_time, _position = base_meta
+        student_node = student_nodes[student_id]
+        progress_nodes = candidate_progress_nodes[(slot_id, student_id, extras_tuple)]
+        solver.add_edge(
+            day_nodes[day_key],
+            progress_nodes[0],
+            1,
+            0,
             metadata=("day_slot", day_key, slot_id),
         )
-        day_slot_edges[slot_id] = day_edge
 
-        for student_id, extra_slots in candidates:
-            person_node = student_nodes[student_id]
-            required_slots = slots_required_by_student.get(student_id, 1)
-            bonus_cost = 0
-            if required_slots > 1 and extra_slots:
-                for extra_slot_id in extra_slots:
-                    if extra_slot_id < 0:
-                        continue
-                    extra_meta = slot_metadata.get(extra_slot_id)
-                    if not extra_meta:
-                        continue
-                    _extra_day, _extra_start, extra_position = extra_meta
-                    bonus_cost += gap_penalty * (extra_position * extra_position)
-                # Slightly prefer longer contiguous lessons when costs tie.
-                bonus_cost += -1 * len(extra_slots)
-            edge_ref = solver.add_edge(
-                slot_node,
-                person_node,
-                1,
-                bonus_cost,
-                metadata=("slot_student", slot_id, student_id, extra_slots),
-            )
-            slot_edges_by_slot[slot_id].append((edge_ref[0], edge_ref[1]))
-            slot_to_student_edges.append(
-                (slot_id, student_id, edge_ref[0], edge_ref[1], extra_slots)
-            )
+        block_slots = (slot_id,) + extras_tuple
+        for idx, block_slot in enumerate(block_slots):
+            slot_in = slot_in_nodes[block_slot]
+            slot_out = slot_out_nodes[block_slot]
+            solver.add_edge(progress_nodes[idx], slot_in, 1, 0)
+            solver.add_edge(slot_out, progress_nodes[idx + 1], 1, 0)
+
+        block_size = len(block_slots)
+        bonus_cost = -1 * (block_size - 1)
+        edge_ref = solver.add_edge(
+            progress_nodes[-1],
+            student_node,
+            1,
+            bonus_cost,
+            metadata=(
+                "slot_student",
+                slot_id,
+                student_id,
+                extras_tuple,
+                day_key,
+                block_size,
+            ),
+        )
+        slot_to_student_edges.append(
+            (slot_id, student_id, edge_ref[0], edge_ref[1], extras_tuple)
+        )
 
     for student_id, node in student_nodes.items():
         solver.add_edge(node, sink, 1, 0, metadata=("student_sink", student_id))
 
     target_flow = len(student_by_id)
-    blocked_slots: Set[int] = set()
-
-    def handle_assignment(metadata: Tuple, flow_amount: int) -> None:
-        if flow_amount <= 0:
-            return
-        marker = metadata[0] if metadata else None
-        if marker != "slot_student":
-            return
-        slot_id, _student_id, extra_slots = metadata[1], metadata[2], metadata[3]
-        extra_slots = tuple(extra_slots or ())
-        base_slot_meta = slot_metadata.get(slot_id)
-        if base_slot_meta is None:
-            return
-        day_key, _start_time, _position = base_slot_meta
-        if extra_slots:
-            for extra_slot_id in extra_slots:
-                if extra_slot_id in blocked_slots:
-                    continue
-                blocked_slots.add(extra_slot_id)
-                if extra_slot_id in day_slot_edges:
-                    day_u, day_index = day_slot_edges[extra_slot_id]
-                    day_edge = solver.graph[day_u][day_index]
-                    day_edge.cap = 0
-                    reverse_edge = solver.graph[day_edge.to][day_edge.rev]
-                    reverse_edge.cap = 0
-                for edge_u, edge_index in slot_edges_by_slot.get(extra_slot_id, []):
-                    edge = solver.graph[edge_u][edge_index]
-                    edge.cap = 0
-                    reverse = solver.graph[edge.to][edge.rev]
-                    reverse.cap = 0
-
-        block_size = 1 + len(extra_slots)
-        if block_size > 1:
-            state = day_states.get(day_key)
-            if state is not None:
-                state.assignments_made += (block_size - 1) * flow_amount
-                remaining = max(0, state.total_slots - state.assignments_made)
-                through_u, through_idx = state.through_edge
-                current_cap = solver.graph[through_u][through_idx].cap
-                if current_cap > remaining:
-                    solver.graph[through_u][through_idx].cap = remaining
 
     flow, total_cost = solver.successive_shortest_path(
         source,
         sink,
         target_flow,
         day_states,
-        on_assign=handle_assignment,
     )
 
-    potential_assignments: List[
-        Tuple[int, date, datetime, int, int, Tuple[int, ...], Student]
-    ] = []
+    lessons: List[ScheduledLesson] = []
+    assigned_student_ids: Set[int] = set()
 
-    for slot_id, student_id, edge_u, edge_index, extra_slots in slot_to_student_edges:
+    for slot_id, student_id, edge_u, edge_index, extras_tuple in slot_to_student_edges:
         edge = solver.graph[edge_u][edge_index]
         if edge.cap != 0:
             continue
 
         day_key, start_time, _position = slot_metadata[slot_id]
         student = student_by_id[student_id]
-        required_slots = slots_required_by_student.get(student_id, 1)
-        potential_assignments.append(
-            (
-                required_slots,
-                day_key,
-                start_time,
-                slot_id,
-                student_id,
-                extra_slots,
-                student,
-            )
-        )
-
-    potential_assignments.sort(
-        key=lambda item: (
-            -item[0],
-            item[1],
-            item[2],
-            item[6].name,
-        )
-    )
-
-    lessons: List[ScheduledLesson] = []
-    assigned_student_ids: Set[int] = set()
-    occupied_slots: Set[int] = set()
-
-    for required_slots, day_key, start_time, slot_id, student_id, extra_slots, student in potential_assignments:
-        needed_slots = (slot_id,) + tuple(extra_slots or ())
-        if any(slot in occupied_slots for slot in needed_slots):
-            continue
-
-        for slot in needed_slots:
-            occupied_slots.add(slot)
-
         assigned_student_ids.add(student_id)
         lessons.append(
             ScheduledLesson(
