@@ -705,7 +705,7 @@ export default function ScheduleDetail() {
                   <List className="divide-y divide-slate-100 rounded-2xl border border-slate-100">
                     {draftStudents.map((student) => (
                       <ListItem key={student.id} className="block space-y-4 py-4">
-                        <div className="space-y-4 md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-4 md:space-y-0">
+                        <div className="space-y-4">
                           <Input
                             label="Student name"
                             value={student.name}
@@ -718,48 +718,52 @@ export default function ScheduleDetail() {
                             className={`${primaryInputFocusClasses} !border-0 focus:!border-0 !border-b-2 !border-b-purple-500`}
                             crossOrigin=""
                           />
-                          <div className="flex flex-wrap items-center gap-3">
-                            <Typography variant="small" className="text-slate-500">
-                              Lesson length
-                            </Typography>
-                            <ButtonGroup variant="outlined" color="purple" size="sm">
-                              {[30, 60, 90].map((length) => (
-                                <Button
-                                  key={length}
-                                  color={student.lessonLength === length ? "purple" : "gray"}
-                                  variant={
-                                    student.lessonLength === length ? "filled" : "text"
-                                  }
-                                  className={
-                                    student.lessonLength === length
-                                      ? `${primaryButtonFilledClasses} !text-white`
-                                      : `${primaryButtonOutlinedClasses} !text-slate-600`
-                                  }
-                                  onClick={() =>
-                                    handleDraftStudentChange(student.id, {
-                                      lessonLength: length,
-                                    })
-                                  }
-                                >
-                                  {length} min
-                                </Button>
-                              ))}
-                            </ButtonGroup>
-                            <Chip
-                              value={student.submitted ? "Submitted" : "Pending"}
-                              size="sm"
-                              color={student.submitted ? "green" : "gray"}
-                              variant={student.submitted ? "filled" : "outlined"}
-                            />
-                            <IconButton
-                              color="red"
-                              variant="text"
-                              size="sm"
-                              onClick={() => handleRemoveDraftStudent(student.id)}
-                              aria-label={`Remove ${student.name || "student"}`}
-                            >
-                              <TrashIcon className="h-5 w-5" />
-                            </IconButton>
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-wrap items-center gap-3">
+                              <Typography variant="small" className="text-slate-500">
+                                Lesson length
+                              </Typography>
+                              <ButtonGroup variant="outlined" color="purple" size="sm">
+                                {[30, 60, 90].map((length) => (
+                                  <Button
+                                    key={length}
+                                    color={student.lessonLength === length ? "purple" : "gray"}
+                                    variant={
+                                      student.lessonLength === length ? "filled" : "text"
+                                    }
+                                    className={
+                                      student.lessonLength === length
+                                        ? `${primaryButtonFilledClasses} !text-white`
+                                        : `${primaryButtonOutlinedClasses} !text-slate-600`
+                                    }
+                                    onClick={() =>
+                                      handleDraftStudentChange(student.id, {
+                                        lessonLength: length,
+                                      })
+                                    }
+                                  >
+                                    {length} min
+                                  </Button>
+                                ))}
+                              </ButtonGroup>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Chip
+                                value={student.submitted ? "Submitted" : "Pending"}
+                                size="sm"
+                                color={student.submitted ? "green" : "gray"}
+                                variant={student.submitted ? "filled" : "outlined"}
+                              />
+                              <IconButton
+                                color="red"
+                                variant="text"
+                                size="sm"
+                                onClick={() => handleRemoveDraftStudent(student.id)}
+                                aria-label={`Remove ${student.name || "student"}`}
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </IconButton>
+                            </div>
                           </div>
                         </div>
                       </ListItem>
