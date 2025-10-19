@@ -1,5 +1,5 @@
-import { useLocation, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   Button,
   Card,
@@ -95,12 +95,12 @@ export default function ScheduleDetail() {
 
   const shareLink = `${getAppOrigin()}/s/${scheduleData.linkSlug ?? scheduleData.id}`;
 
-  const handleToggleSlot = (date, slot) => {
+  const handleToggleSlot = (date, slot, value) => {
     setAvailability((previous) => ({
       ...previous,
       [date]: {
         ...previous[date],
-        [slot]: !previous[date][slot],
+        [slot]: value !== undefined ? value : !previous[date][slot],
       },
     }));
   };

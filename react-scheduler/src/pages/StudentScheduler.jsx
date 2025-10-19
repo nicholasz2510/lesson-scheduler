@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button, Card, CardBody, Typography } from "@material-tailwind/react";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import AvailabilityGrid from "../components/AvailabilityGrid";
 import {
   createBlankAvailability,
@@ -33,12 +34,12 @@ export default function StudentScheduler() {
 
   useDocumentTitle(`${student.name} availability – ${schedule.title}`);
 
-  const handleToggle = (date, slot) => {
+  const handleToggle = (date, slot, value) => {
     setAvailability((previous) => ({
       ...previous,
       [date]: {
         ...previous[date],
-        [slot]: !previous[date][slot],
+        [slot]: value !== undefined ? value : !previous[date][slot],
       },
     }));
   };
@@ -46,13 +47,27 @@ export default function StudentScheduler() {
   const handleSubmit = () => {
     // TODO: send the student availability to the backend.
     setSubmitted(true);
-    setTimeout(() => navigate(`/s/${schedule.id}`), 2000);
+  };
+
+  const handleBack = () => {
+    navigate(`/s/${scheduleId}`);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-12">
       <Card className="mx-auto w-full max-w-5xl shadow-lg">
         <CardBody className="space-y-8 p-8 md:p-12">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="text"
+              color="gray"
+              className="flex items-center gap-2 p-2"
+              onClick={handleBack}
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Back to student selection
+            </Button>
+          </div>
           <div className="space-y-2 text-center">
             <Typography
               variant="small"
@@ -63,9 +78,6 @@ export default function StudentScheduler() {
             </Typography>
             <Typography variant="h4" className="font-display text-slate-800">
               {student.name}, share your availability
-            </Typography>
-            <Typography variant="small" className="text-slate-500">
-              Select every time block that works for you on {formatScheduleDates(schedule.dates)}.
             </Typography>
           </div>
           <AvailabilityGrid

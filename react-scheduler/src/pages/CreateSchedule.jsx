@@ -68,6 +68,8 @@ export default function CreateSchedule() {
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState(location.state?.title ?? "Spring Studio Week");
   const [selectedDates, setSelectedDates] = useState(location.state?.dates ?? []);
+  const [startTime, setStartTime] = useState(location.state?.startTime ?? "09:00");
+  const [endTime, setEndTime] = useState(location.state?.endTime ?? "17:00");
   const [students, setStudents] = useState(location.state?.students ?? defaultStudents);
 
   // Generate upcoming date options starting from the closest Sunday
@@ -135,6 +137,8 @@ export default function CreateSchedule() {
       id: shareSlug,
       title,
       dates: selectedDates,
+      startTime,
+      endTime,
       students,
     };
     // TODO: replace with server call to persist schedule and generate share link.
@@ -162,11 +166,12 @@ export default function CreateSchedule() {
         );
       case 1:
         return (
-          <div className="space-y-4">
-            <Typography variant="small" className="text-slate-500">
-              Select all dates for this schedule
-            </Typography>
-            <div className="max-w-2xl mx-auto">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Typography variant="small" className="text-slate-500">
+                Select all dates for this schedule
+              </Typography>
+              <div className="max-w-2xl mx-auto">
               {/* Day of week headers */}
               <div className="grid grid-cols-7 gap-2 mb-2">
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
@@ -232,6 +237,47 @@ export default function CreateSchedule() {
             <Typography variant="small" className="text-slate-400">
               You can add or remove dates later from the schedule page.
             </Typography>
+            </div>
+            
+            {/* Time selection */}
+            <div className="space-y-4">
+              <Typography variant="small" className="text-slate-500">
+                What time range should be available each day?
+              </Typography>
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <Typography variant="small" className="text-slate-600 mb-2">
+                    Start time
+                  </Typography>
+                  <Input
+                    type="time"
+                    size="lg"
+                    color="purple"
+                    value={startTime}
+                    onChange={(event) => setStartTime(event.target.value)}
+                    className={primaryInputFocusClasses}
+                    crossOrigin=""
+                  />
+                </div>
+                <div className="flex-1">
+                  <Typography variant="small" className="text-slate-600 mb-2">
+                    End time
+                  </Typography>
+                  <Input
+                    type="time"
+                    size="lg"
+                    color="purple"
+                    value={endTime}
+                    onChange={(event) => setEndTime(event.target.value)}
+                    className={primaryInputFocusClasses}
+                    crossOrigin=""
+                  />
+                </div>
+              </div>
+              <Typography variant="small" className="text-slate-400">
+                Students will be able to mark their availability within this time range.
+              </Typography>
+            </div>
           </div>
         );
       case 2:
@@ -259,7 +305,7 @@ export default function CreateSchedule() {
                         Lesson length
                       </Typography>
                       <ButtonGroup variant="outlined" color="purple" size="sm">
-                        {[30, 60].map((length) => (
+                        {[30, 60, 90].map((length) => (
                           <Button
                             key={length}
                             color={student.lessonLength === length ? "purple" : "gray"}
@@ -268,8 +314,8 @@ export default function CreateSchedule() {
                             }
                             className={
                               student.lessonLength === length
-                                ? primaryButtonFilledClasses
-                                : primaryButtonOutlinedClasses
+                                ? `${primaryButtonFilledClasses} !text-white`
+                                : `${primaryButtonOutlinedClasses} !text-slate-600`
                             }
                             onClick={() =>
                               handleStudentChange(student.id, { lessonLength: length })
@@ -332,6 +378,14 @@ export default function CreateSchedule() {
                   {formatScheduleDates(selectedDates)}
                 </Typography>
               </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <Typography variant="small" className="text-slate-500">
+                  Time range
+                </Typography>
+                <Typography variant="h6" className="font-display text-slate-800">
+                  {startTime} - {endTime}
+                </Typography>
+              </div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <Typography variant="small" className="text-slate-500">
@@ -388,7 +442,7 @@ export default function CreateSchedule() {
                   className={primaryButtonFilledClasses}
                   onClick={goNext}
                 >
-                  Continue
+                  {step === 2 ? "Create schedule" : "Continue"}
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
