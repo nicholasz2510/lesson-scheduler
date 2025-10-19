@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Button, IconButton, Typography } from "@material-tailwind/react";
 import { MenuIcon } from "./icons";
 import { teacherProfile } from "../data/mockData";
@@ -11,6 +11,13 @@ const navItems = [
 ];
 
 export default function TeacherLayout({ pageTitle, actions, children }) {
+  const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    // TODO: replace with server request to sign out.
+    navigate("/");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="flex min-h-screen">
@@ -49,6 +56,7 @@ export default function TeacherLayout({ pageTitle, actions, children }) {
               variant="text"
               color="gray"
               className="mt-4 w-full justify-start"
+              onClick={handleSignOut}
             >
               Sign out
             </Button>
